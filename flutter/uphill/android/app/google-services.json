@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "462781735560",
+    "project_id": "uphil-9fc91",
+    "storage_bucket": "uphil-9fc91.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:462781735560:android:4e6e435e6ec423d931f53d",
+        "android_client_info": {
+          "package_name": "com.example.uphill"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCsa2tNcgw3x4LOyVbwfH5AvwbmJ7dorFU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
