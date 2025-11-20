@@ -1,8 +1,15 @@
 from fastapi import FastAPI
 
-app = FastAPI()
+from api import routines
+
+app = FastAPI(title="Uphill Backend")
+
 
 @app.get("/")
 def read_root():
-    return {"message" : f"Hello, World!"}
+    return {"message": "Hello, World!"}
 
+
+app.include_router(routines.router)
+
+    
