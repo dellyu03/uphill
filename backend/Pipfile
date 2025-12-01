@@ -8,6 +8,7 @@ fastapi = "*"
 uvicorn = "*"
 langchain-core = "*"
 langchain-community = "*"
+ultralytics = "*"
 
 [dev-packages]
 
