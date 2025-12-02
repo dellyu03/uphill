@@ -1,15 +1,16 @@
 from fastapi import FastAPI
+from auth.google_router import router as google_router
+from api.user import router as user_router
+import auth.firebase_init
+from dotenv import load_dotenv
+load_dotenv()
 
-from api import routines
+app = FastAPI()
 
-app = FastAPI(title="Uphill Backend")
+app.include_router(google_router)
+app.include_router(user_router)
 
 
 @app.get("/")
-def read_root():
-    return {"message": "Hello, World!"}
-
-
-app.include_router(routines.router)
-
-    
+def root():
+    return {"status": "OK"}

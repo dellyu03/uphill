@@ -46,3 +46,7 @@ app.*.map.json
 
 # firebase configure api-key
 .firebase
+
+
+/backend/.env
+/backend/serviceAccountKey.json

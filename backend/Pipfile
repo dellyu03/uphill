@@ -9,6 +9,8 @@ uvicorn = "*"
 langchain-core = "*"
 langchain-community = "*"
 ultralytics = "*"
+firebase-admin = "*"
+python-dotenv = "*"
 
 [dev-packages]
 
