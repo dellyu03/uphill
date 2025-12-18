@@ -30,9 +30,7 @@ class GoogleLoginScreen extends StatefulWidget {
 class _GoogleLoginScreenState extends State<GoogleLoginScreen> {
   // iOS에서는 GoogleService-Info.plist의 CLIENT_ID를 자동으로 사용
   // serverClientId는 백엔드 검증용이므로 iOS의 경우 별도 설정 필요
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email', 'profile'],
-  );
+  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
 
   GoogleSignInAccount? _currentUser;
   Map<String, dynamic>? _serverUserInfo;
@@ -66,7 +64,7 @@ class _GoogleLoginScreenState extends State<GoogleLoginScreen> {
 
       /// 1) FastAPI 로그인
       final loginRes = await http.post(
-        Uri.parse("http://localhost:8000/auth/google"),
+        Uri.parse("http://10.0.2.2:8000/auth/google"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"id_token": idToken}),
       );
@@ -84,7 +82,7 @@ class _GoogleLoginScreenState extends State<GoogleLoginScreen> {
       /// 2) FastAPI에서 사용자 정보 GET
       debugPrint("📤 사용자 정보 요청 중...");
       final infoRes = await http.get(
-        Uri.parse("http://localhost:8000/user/info?uid=$uid"),
+        Uri.parse("http://10.0.2.2:8000/user/info?uid=$uid"),
       );
 
       if (infoRes.statusCode != 200) {
@@ -123,10 +121,7 @@ class _GoogleLoginScreenState extends State<GoogleLoginScreen> {
       // 사용자에게 에러 메시지 표시
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("로그인 실패: $e"),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text("로그인 실패: $e"), backgroundColor: Colors.red),
         );
       }
     } finally {

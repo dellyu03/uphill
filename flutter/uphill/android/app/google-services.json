@@ -12,7 +12,20 @@
           "package_name": "com.example.uphill"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "462781735560-u0e79nclg0p1k5fnjpfddlm8co5nnebp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.uphill",
+            "certificate_hash": "c6da8d692a12d690395e3ae1185e0709c28f184b"
+          }
+        },
+        {
+          "client_id": "462781735560-gglnljg1btorssekj3pupbetf1t7ejl6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCsa2tNcgw3x4LOyVbwfH5AvwbmJ7dorFU"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "462781735560-gglnljg1btorssekj3pupbetf1t7ejl6.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "462781735560-r2dc13banncrt6rh3hesl5l2uib479c5.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.uphill"
+              }
+            }
+          ]
         }
       }
     }
