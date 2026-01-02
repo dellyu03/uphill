@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: uphill-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # 개발 시 코드 변경사항 반영을 위한 볼륨 마운트 (선택사항)
+      # 프로덕션에서는 이 볼륨 마운트를 제거하세요
+      - .:/app
+      # serviceAccountKey.json 파일이 있는 경우에만 마운트 (선택사항)
+      # 환경 변수 FIREBASE_SERVICE_ACCOUNT_KEY를 사용하는 경우 불필요
+    environment:
+      - PYTHONUNBUFFERED=1
+      # Firebase 서비스 계정 키를 환경 변수로 제공 (선택사항)
+      # JSON 문자열로 제공하거나 파일 경로를 제공할 수 있습니다
+      # 예: FIREBASE_SERVICE_ACCOUNT_KEY='{"type":"service_account",...}'
+      # 또는: FIREBASE_SERVICE_ACCOUNT_PATH=/path/to/serviceAccountKey.json
+      - FIREBASE_SERVICE_ACCOUNT_KEY=${FIREBASE_SERVICE_ACCOUNT_KEY:-}
+      - FIREBASE_SERVICE_ACCOUNT_PATH=${FIREBASE_SERVICE_ACCOUNT_PATH:-serviceAccountKey.json}
+      # Google OAuth 클라이언트 ID
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+    # .env 파일이 있으면 자동으로 로드 (선택사항)
+    env_file:
+      - .env
+    restart: unless-stopped
