@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import '../home_screen.dart';
+import '../../services/routine_service.dart';
 
 class RoutineStep3Screen extends StatefulWidget {
-  const RoutineStep3Screen({super.key});
+  final String routineTitle;
+  final TimeOfDay startTime;
+  final TimeOfDay endTime;
+  
+  const RoutineStep3Screen({
+    super.key,
+    required this.routineTitle,
+    required this.startTime,
+    required this.endTime,
+  });
 
   @override
   State<RoutineStep3Screen> createState() => _RoutineStep3ScreenState();
@@ -13,6 +23,8 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
   final List<String> days = ['월', '화', '수', '목', '금', '토', '일'];
   final List<bool> selectedDays = List.generate(7, (index) => false);
   bool isAlarmOn = false;
+  final RoutineService _routineService = RoutineService();
+  bool _isSaving = false;
 
   @override
   Widget build(BuildContext context) {
@@ -138,24 +150,26 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: () {
-                  // Navigate back to Home (and conceptually save)
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => const HomeScreen()),
-                    (route) => false,
-                  );
-                },
+                onPressed: _isSaving ? null : _saveRoutine,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                child: const Text(
-                  '완료',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text(
+                        '완료',
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
               ),
             ),
             const SizedBox(height: 24),
@@ -163,5 +177,48 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
         ),
       ),
     );
+  }
+
+  Future<void> _saveRoutine() async {
+    setState(() => _isSaving = true);
+    
+    try {
+      // 시작 시간을 HH:MM 형식으로 변환
+      final timeStr = '${widget.startTime.hour.toString().padLeft(2, '0')}:${widget.startTime.minute.toString().padLeft(2, '0')}';
+      
+      // 카테고리는 기본값으로 설정 (나중에 카테고리 선택 기능 추가 가능)
+      await _routineService.createRoutine(
+        title: widget.routineTitle,
+        time: timeStr,
+        category: '일반',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("✅ 루틴이 생성되었습니다!"),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // 홈 화면으로 이동
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      debugPrint("❌ 루틴 생성 실패: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("루틴 생성 실패: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+        setState(() => _isSaving = false);
+      }
+    }
   }
 }

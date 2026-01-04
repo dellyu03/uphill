@@ -3,7 +3,9 @@ import 'package:flutter/cupertino.dart';
 import 'routine_step3_screen.dart';
 
 class RoutineStep2Screen extends StatefulWidget {
-  const RoutineStep2Screen({super.key});
+  final String routineTitle;
+  
+  const RoutineStep2Screen({super.key, required this.routineTitle});
 
   @override
   State<RoutineStep2Screen> createState() => _RoutineStep2ScreenState();
@@ -76,7 +78,11 @@ class _RoutineStep2ScreenState extends State<RoutineStep2Screen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const RoutineStep3Screen(),
+                      builder: (context) => RoutineStep3Screen(
+                        routineTitle: widget.routineTitle,
+                        startTime: startTime,
+                        endTime: endTime,
+                      ),
                     ),
                   );
                 },

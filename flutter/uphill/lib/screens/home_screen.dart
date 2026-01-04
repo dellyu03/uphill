@@ -4,6 +4,8 @@ import '../widgets/date_strip.dart';
 import '../widgets/routine_card.dart';
 import 'routine_flow/routine_step1_screen.dart';
 import 'routine_detail_screen.dart';
+import '../services/routine_service.dart';
+import '../services/auth_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,19 +17,87 @@ class HomeScreen extends StatefulWidget {
 class HomeScreenState extends State<HomeScreen> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
-  late Map<DateTime, List<Map<String, dynamic>>> _routines;
+  Map<DateTime, List<Map<String, dynamic>>> _routines = {};
   final ScrollController _scrollController = ScrollController();
+  final RoutineService _routineService = RoutineService();
+  final AuthService _authService = AuthService();
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _selectedDay = _focusedDay;
-    _initializeMockData();
+    _loadRoutines();
 
     // 현재 시간대로 즉시 이동 (슬라이딩 효과 없이)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       scrollToCurrentTime();
     });
+  }
+
+  Future<void> _loadRoutines() async {
+    setState(() => _isLoading = true);
+    try {
+      // 로그인 확인
+      if (!_authService.isLoggedIn) {
+        final loaded = await _authService.loadStoredAuth();
+        if (!loaded) {
+          setState(() => _isLoading = false);
+          return;
+        }
+      }
+
+      final routines = await _routineService.getRoutines();
+      
+      // 루틴을 날짜별로 그룹화 (현재는 오늘 날짜에만 표시)
+      final today = _normalizeDate(DateTime.now());
+      final routinesForToday = routines.map((routine) {
+        final time = routine['time'] as String;
+        // 시간만 있는 경우, 30분 간격으로 가정
+        final timeParts = time.split(':');
+        final hour = int.parse(timeParts[0]);
+        final minute = int.parse(timeParts[1]);
+        final endMinute = minute + 30;
+        final endHour = endMinute >= 60 ? hour + 1 : hour;
+        final endMin = endMinute >= 60 ? endMinute - 60 : endMinute;
+        
+        return {
+          'id': routine['id'],
+          'title': routine['title'],
+          'start': time,
+          'end': '${endHour.toString().padLeft(2, '0')}:${endMin.toString().padLeft(2, '0')}',
+          'category': routine['category'],
+          'color': routine['color'],
+          'isUpdated': false,
+          'isPinned': false,
+        };
+      }).toList();
+
+      setState(() {
+        _routines = {today: routinesForToday};
+        _isLoading = false;
+      });
+
+      // 스크롤 위치 업데이트
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        scrollToCurrentTime();
+      });
+    } catch (e) {
+      debugPrint("❌ 루틴 로드 실패: $e");
+      setState(() {
+        _routines = {};
+        _isLoading = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("루틴을 불러오는데 실패했습니다: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void scrollToCurrentTime() {
@@ -61,60 +131,6 @@ class HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _initializeMockData() {
-    final today = _normalizeDate(DateTime.now());
-    final tomorrow = today.add(const Duration(days: 1));
-
-    // 루틴 상태 데이터: isUpdated, isPinned
-    _routines = {
-      today: [
-        {
-          'title': '아침 스트레칭 루틴',
-          'start': '08:00',
-          'end': '09:30',
-          'isUpdated': true,
-          'isPinned': false,
-        },
-        {
-          'title': '아침 스트레칭 루틴', // Standard
-          'start': '09:30',
-          'end': '10:30',
-          'isUpdated': false,
-          'isPinned': false,
-        },
-        {
-          'title': '아침 스트레칭 루틴', // Updated again for demo
-          'start': '11:00',
-          'end': '12:00',
-          'isUpdated': true,
-          'isPinned': false,
-        },
-        {
-          'title': '아침 스트레칭 루틴', // Pinned
-          'start': '12:00',
-          'end': '13:30',
-          'isUpdated': false,
-          'isPinned': true,
-        },
-        {
-          'title': '아침 스트레칭 루틴', // Standard
-          'start': '13:30',
-          'end': '15:00',
-          'isUpdated': false,
-          'isPinned': false,
-        },
-      ],
-      tomorrow: [
-        {
-          'title': 'Morning Yoga',
-          'start': '08:00',
-          'end': '09:00',
-          'isUpdated': true,
-          'isPinned': false,
-        },
-      ],
-    };
-  }
 
   DateTime _normalizeDate(DateTime date) {
     return DateTime(date.year, date.month, date.day);
@@ -148,11 +164,30 @@ class HomeScreenState extends State<HomeScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
+        onPressed: () async {
+          // 로그인 확인
+          if (!_authService.isLoggedIn) {
+            final loaded = await _authService.loadStoredAuth();
+            if (!loaded) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("로그인이 필요합니다"),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              }
+              return;
+            }
+          }
+          
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const RoutineStep1Screen()),
-          );
+          ).then((_) {
+            // 루틴 생성 후 목록 새로고침
+            _loadRoutines();
+          });
         },
         backgroundColor: Colors.black,
         child: const Icon(Icons.add, color: Colors.white),
@@ -161,6 +196,10 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTimeline() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    
     final now = DateTime.now();
     final selectedDate = _normalizeDate(_selectedDay ?? now);
     final routines = _routines[selectedDate] ?? [];
@@ -262,26 +301,19 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCustomAppBar() {
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
+    return const Padding(
+      padding: EdgeInsets.all(20.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
+          Text(
             'Today',
             style: TextStyle(
               fontSize: 40,
-              fontWeight: FontWeight.w600, // Matching the image's lighter bold
-              color: Color(0xFF4A4A4A), // Dark Grey
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF4A4A4A),
               letterSpacing: -0.5,
             ),
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.signal_cellular_alt,
-              color: Colors.black,
-            ), // Dummy status icon
-            onPressed: () {},
           ),
         ],
       ),

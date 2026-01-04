@@ -8,7 +8,6 @@ import logging
 
 router = APIRouter(prefix="/auth", tags=["GoogleAuth"])
 
-# 로깅 설정
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 

@@ -2,7 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from auth.google_router import router as google_router
 from api.user import router as user_router
-import auth.firebase_init  # Firebase Admin 초기화
+from api.routines import router as routines_router
+import auth.firebase_init  
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -20,6 +21,7 @@ app.add_middleware(
 
 app.include_router(google_router)
 app.include_router(user_router)
+app.include_router(routines_router)
 
 
 @app.get("/")

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'screens/feedback_screen.dart';
 import 'screens/profile_screen.dart';
+import 'services/auth_service.dart';
+import 'login_test.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -14,6 +16,8 @@ class MainScaffold extends StatefulWidget {
 class _MainScaffoldState extends State<MainScaffold> {
   int _currentIndex = 0;
   final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
+  final AuthService _authService = AuthService();
+  bool _checkingAuth = true;
 
   late final List<Widget> _screens = [
     HomeScreen(key: _homeKey),
@@ -22,7 +26,34 @@ class _MainScaffoldState extends State<MainScaffold> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _checkAuth();
+  }
+
+  Future<void> _checkAuth() async {
+    final hasAuth = await _authService.loadStoredAuth();
+    if (!hasAuth || !_authService.isLoggedIn) {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const GoogleLoginScreen()),
+        );
+      }
+    } else {
+      setState(() => _checkingAuth = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_checkingAuth) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFE9E8E7),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFE9E8E7),
       body: Stack(
@@ -50,21 +81,9 @@ class _MainScaffoldState extends State<MainScaffold> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildNavItem(
-                      0,
-                      'assets/icons/home_on.svg',
-                      'assets/icons/home_off.svg',
-                    ),
-                    _buildNavItem(
-                      1,
-                      'assets/icons/feedback_on.svg',
-                      'assets/icons/feedback_off.svg',
-                    ), // Using feedback icons for retrospective for now
-                    _buildNavItem(
-                      2,
-                      'assets/icons/user_on.svg',
-                      'assets/icons/user_off.svg',
-                    ), // Assuming user icons exist or fallbacks
+                    _buildNavItem(0),
+                    _buildNavItem(1),
+                    _buildNavItem(2),
                   ],
                 ),
               ),
@@ -75,11 +94,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     );
   }
 
-  Widget _buildNavItem(
-    int index,
-    String activeIconPath,
-    String inactiveIconPath,
-  ) {
+  Widget _buildNavItem(int index) {
     final bool isSelected = _currentIndex == index;
     return GestureDetector(
       onTap: () {
@@ -91,8 +106,7 @@ class _MainScaffoldState extends State<MainScaffold> {
         });
       },
       child: isSelected
-          ? (index ==
-                    2 // Profile icon might be different, let's use standard icons if SVG assets are missing/uncertain, or try to load SVG
+          ? (index == 2
                 ? const Icon(Icons.person, color: Colors.black)
                 : (index == 1
                       ? const Icon(Icons.list_alt, color: Colors.black)

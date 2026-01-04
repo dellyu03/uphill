@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'main_scaffold.dart';
+import 'theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'services/auth_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const GoogleLoginApp());
 }
 
@@ -13,9 +18,15 @@ class GoogleLoginApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Google Login Test with User Info',
-      home: const GoogleLoginScreen(),
+      title: 'Uphill',
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+        textTheme: GoogleFonts.montserratTextTheme(),
+        extensions: const <ThemeExtension<dynamic>>[UphillColors.light],
+      ),
+      home: const GoogleLoginScreen(),
     );
   }
 }
@@ -28,88 +39,57 @@ class GoogleLoginScreen extends StatefulWidget {
 }
 
 class _GoogleLoginScreenState extends State<GoogleLoginScreen> {
-  // iOS에서는 GoogleService-Info.plist의 CLIENT_ID를 자동으로 사용
-  // serverClientId는 백엔드 검증용이므로 iOS의 경우 별도 설정 필요
-  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
-
-  GoogleSignInAccount? _currentUser;
-  Map<String, dynamic>? _serverUserInfo;
+  final AuthService _authService = AuthService();
   bool _loading = false;
+  bool _checkingAuth = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkExistingAuth();
+  }
+
+  Future<void> _checkExistingAuth() async {
+    final hasAuth = await _authService.loadStoredAuth();
+    if (hasAuth && _authService.isLoggedIn) {
+      // 이미 로그인되어 있으면 메인 화면으로 이동
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainScaffold()),
+        );
+      }
+    } else {
+      setState(() => _checkingAuth = false);
+    }
+  }
 
   Future<void> _signIn() async {
     setState(() => _loading = true);
 
     try {
-      debugPrint("🔄 Google Sign In 시작...");
-      final GoogleSignInAccount? user = await _googleSignIn.signIn();
+      final success = await _authService.signIn();
 
-      if (user == null) {
-        debugPrint("❌ 사용자가 로그인을 취소했습니다");
-        setState(() => _loading = false);
-        return;
-      }
+      if (success && _authService.isLoggedIn) {
+        debugPrint("🎉 구글 로그인 전체 플로우 완료!");
 
-      debugPrint("✅ Google Sign In 성공: ${user.email}");
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("✅ 구글 로그인 성공!"),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
 
-      final googleAuth = await user.authentication;
-      final idToken = googleAuth.idToken;
-
-      if (idToken == null) {
-        debugPrint("❌ ID Token을 가져올 수 없습니다");
-        setState(() => _loading = false);
-        return;
-      }
-
-      debugPrint("📤 백엔드로 ID Token 전송 중...");
-
-      /// 1) FastAPI 로그인
-      final loginRes = await http.post(
-        Uri.parse("http://10.0.2.2:8000/auth/google"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"id_token": idToken}),
-      );
-
-      debugPrint("📥 백엔드 응답: ${loginRes.statusCode}");
-      if (loginRes.statusCode != 200) {
-        debugPrint("❌ 백엔드 로그인 실패: ${loginRes.body}");
-        throw Exception("Backend login failed: ${loginRes.body}");
-      }
-
-      final loginData = jsonDecode(loginRes.body);
-      final uid = loginData["uid"];
-      debugPrint("✅ 백엔드 로그인 성공! UID: $uid");
-
-      /// 2) FastAPI에서 사용자 정보 GET
-      debugPrint("📤 사용자 정보 요청 중...");
-      final infoRes = await http.get(
-        Uri.parse("http://10.0.2.2:8000/user/info?uid=$uid"),
-      );
-
-      if (infoRes.statusCode != 200) {
-        debugPrint("❌ 사용자 정보 조회 실패: ${infoRes.body}");
-        throw Exception("Failed to get user info: ${infoRes.body}");
-      }
-
-      final infoData = jsonDecode(infoRes.body);
-      debugPrint("✅ 사용자 정보 조회 성공!");
-      debugPrint("📊 서버 사용자 정보: $infoData");
-
-      setState(() {
-        _currentUser = user;
-        _serverUserInfo = infoData; // 서버에서 가져온 사용자 정보
-      });
-
-      debugPrint("🎉 구글 로그인 전체 플로우 완료!");
-
-      // 성공 메시지 표시
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("✅ 구글 로그인 성공!"),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
+          // 메인 화면으로 이동
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const MainScaffold()),
+          );
+        }
+      } else {
+        throw Exception("로그인에 실패했습니다");
       }
     } catch (e, stack) {
       debugPrint("=" * 60);
@@ -118,70 +98,96 @@ class _GoogleLoginScreenState extends State<GoogleLoginScreen> {
       debugPrint("Stack trace: $stack");
       debugPrint("=" * 60);
 
-      // 사용자에게 에러 메시지 표시
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("로그인 실패: $e"), backgroundColor: Colors.red),
         );
       }
     } finally {
-      setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
-  }
-
-  Future<void> _signOut() async {
-    await _googleSignIn.signOut();
-    setState(() {
-      _currentUser = null;
-      _serverUserInfo = null;
-    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = _currentUser;
+    if (_checkingAuth) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Google Login Test"), centerTitle: true),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : user == null
-          ? Center(
-              child: ElevatedButton(
-                onPressed: _signIn,
-                child: const Text("Sign in with Google"),
-              ),
-            )
-          : Column(
+      backgroundColor: const Color(0xFFE9E8E7),
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CircleAvatar(
-                  radius: 40,
-                  backgroundImage: NetworkImage(user.photoUrl ?? ""),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  user.displayName ?? "",
-                  style: const TextStyle(fontSize: 20),
-                ),
-                Text(user.email),
-                const SizedBox(height: 20),
-                if (_serverUserInfo != null) ...[
-                  const Text(
-                    "📌 Server User Info",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                const Text(
+                  'Uphill',
+                  style: TextStyle(
+                    fontSize: 48,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
                   ),
-                  Text("UID: ${_serverUserInfo!['uid']}"),
-                  Text("Role: ${_serverUserInfo!['role']}"),
-                  Text("Created: ${_serverUserInfo!['created_at']}"),
-                ],
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: _signOut,
-                  child: const Text("Logout"),
                 ),
+                const SizedBox(height: 16),
+                const Text(
+                  '루틴을 통해 더 나은 하루를 만들어보세요',
+                  style: TextStyle(fontSize: 16, color: Colors.black54),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 60),
+                if (_loading)
+                  const CircularProgressIndicator()
+                else
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: _signIn,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.network(
+                            'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
+                            width: 24,
+                            height: 24,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(
+                                Icons.login,
+                                color: Colors.white,
+                                size: 24,
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Google로 로그인',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
+          ),
+        ),
+      ),
     );
   }
 }

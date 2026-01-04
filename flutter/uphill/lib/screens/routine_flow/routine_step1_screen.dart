@@ -78,10 +78,21 @@ class _RoutineStep1ScreenState extends State<RoutineStep1Screen> {
               height: 56,
               child: ElevatedButton(
                 onPressed: () {
+                  if (_nameController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("루틴 이름을 입력해주세요"),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                    return;
+                  }
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const RoutineStep2Screen(),
+                      builder: (context) => RoutineStep2Screen(
+                        routineTitle: _nameController.text.trim(),
+                      ),
                     ),
                   );
                 },

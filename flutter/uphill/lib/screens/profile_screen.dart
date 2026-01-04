@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../services/auth_service.dart';
+import '../login_test.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -7,6 +9,8 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<UphillColors>()!;
+    final authService = AuthService();
+    final userInfo = authService.userInfo;
 
     return Scaffold(
       backgroundColor: colors.bgMain,
@@ -44,18 +48,39 @@ class ProfileScreen extends StatelessWidget {
                       color: Colors.grey[300],
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
-                      Icons.person,
-                      size: 60,
-                      color: Colors.white,
-                    ),
+                    child: userInfo?['picture'] != null
+                        ? ClipOval(
+                            child: Image.network(
+                              userInfo!['picture'],
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(
+                                  Icons.person,
+                                  size: 60,
+                                  color: Colors.white,
+                                );
+                              },
+                            ),
+                          )
+                        : const Icon(
+                            Icons.person,
+                            size: 60,
+                            color: Colors.white,
+                          ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    '김업힐',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  Text(
+                    userInfo?['name'] ?? '사용자',
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
+                  Text(
+                    userInfo?['email'] ?? '',
+                    style: const TextStyle(color: Colors.grey, fontSize: 14),
+                  ),
+                  const SizedBox(height: 4),
                   const Text(
                     '오늘도 힘차게 오르고 있습니다!',
                     style: TextStyle(color: Colors.grey, fontSize: 14),
@@ -77,6 +102,20 @@ class ProfileScreen extends StatelessWidget {
             _buildSection('지원', [
               _buildListTile(Icons.help_outline, '고객센터'),
               _buildListTile(Icons.info_outline, '앱 정보'),
+            ]),
+            const SizedBox(height: 24),
+            _buildSection('계정', [
+              _buildListTile(Icons.logout, '로그아웃', onTap: () async {
+                final authService = AuthService();
+                await authService.signOut();
+                if (context.mounted) {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const GoogleLoginScreen()),
+                    (route) => false,
+                  );
+                }
+              }),
             ]),
           ],
         ),
@@ -108,12 +147,12 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildListTile(IconData icon, String title) {
+  Widget _buildListTile(IconData icon, String title, {VoidCallback? onTap}) {
     return ListTile(
       leading: Icon(icon, color: Colors.black),
       title: Text(title),
       trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-      onTap: () {},
+      onTap: onTap ?? () {},
     );
   }
 }
