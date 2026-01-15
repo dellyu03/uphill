@@ -69,6 +69,7 @@ async def create_routine(
             "time": routine.time,
             "category": routine.category,
             "color": routine.color,
+            "days": routine.days,  # 반복 요일
             "created_at": now_str,
             "updated_at": now_str,
         }
@@ -89,6 +90,7 @@ async def create_routine(
             time=routine.time,
             category=routine.category,
             color=routine.color,
+            days=routine.days,
             created_at=now_str,
             updated_at=now_str,
         )
@@ -138,6 +140,7 @@ async def get_routines(
                     time=data.get("time", ""),
                     category=data.get("category", ""),
                     color=data.get("color"),
+                    days=data.get("days"),
                     created_at=data.get("created_at", ""),
                     updated_at=data.get("updated_at", ""),
                 )
@@ -187,7 +190,7 @@ async def get_routine(
             )
         
         data = doc.to_dict()
-        
+
         return RoutineResponse(
             id=doc.id,
             uid=data.get("uid", uid),
@@ -195,10 +198,11 @@ async def get_routine(
             time=data.get("time", ""),
             category=data.get("category", ""),
             color=data.get("color"),
+            days=data.get("days"),
             created_at=data.get("created_at", ""),
             updated_at=data.get("updated_at", ""),
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -267,6 +271,8 @@ async def update_routine(
             update_data["category"] = routine_update.category
         if routine_update.color is not None:
             update_data["color"] = routine_update.color
+        if routine_update.days is not None:
+            update_data["days"] = routine_update.days
         
         # Firestore 업데이트
         doc_ref.update(update_data)
@@ -276,7 +282,7 @@ async def update_routine(
         data = updated_doc.to_dict()
         
         logger.info(f"✅ 루틴 수정 성공: {routine_id}")
-        
+
         return RoutineResponse(
             id=updated_doc.id,
             uid=data.get("uid", uid),
@@ -284,6 +290,7 @@ async def update_routine(
             time=data.get("time", ""),
             category=data.get("category", ""),
             color=data.get("color"),
+            days=data.get("days"),
             created_at=data.get("created_at", ""),
             updated_at=data.get("updated_at", ""),
         )

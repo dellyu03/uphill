@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from auth.google_router import router as google_router
 from api.user import router as user_router
 from api.routines import router as routines_router
-import auth.firebase_init  
+from api.executions import router as executions_router
+import auth.firebase_init
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -22,6 +23,7 @@ app.add_middleware(
 app.include_router(google_router)
 app.include_router(user_router)
 app.include_router(routines_router)
+app.include_router(executions_router)
 
 
 @app.get("/")
