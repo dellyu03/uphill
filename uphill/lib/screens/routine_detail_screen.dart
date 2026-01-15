@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 
 import 'routine_edit_screen.dart';
 import 'routine_in_progress_screen.dart';
+import '../services/routine_service.dart';
 
 class RoutineDetailScreen extends StatelessWidget {
+  final String routineId;
   final String title;
   final String timeRange;
 
   const RoutineDetailScreen({
     super.key,
+    required this.routineId,
     required this.title,
     required this.timeRange,
   });
@@ -47,11 +50,17 @@ class RoutineDetailScreen extends StatelessWidget {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => RoutineEditScreen(
+                                  routineId: routineId,
                                   title: title,
                                   timeRange: timeRange,
                                 ),
                               ),
-                            );
+                            ).then((updated) {
+                              // 수정 완료 후 이전 화면으로 돌아가기
+                              if (updated == true) {
+                                Navigator.pop(context, true);
+                              }
+                            });
                           },
                         ),
                         ListTile(
@@ -60,9 +69,60 @@ class RoutineDetailScreen extends StatelessWidget {
                             '삭제하기',
                             style: TextStyle(color: Colors.red),
                           ),
-                          onTap: () {
+                          onTap: () async {
                             Navigator.pop(context);
-                            // Handle delete logic
+
+                            // 삭제 확인 다이얼로그
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (BuildContext dialogContext) {
+                                return AlertDialog(
+                                  title: const Text('루틴 삭제'),
+                                  content: Text('\'$title\' 루틴을 삭제하시겠습니까?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(dialogContext, false),
+                                      child: const Text('취소'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(dialogContext, true),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: Colors.red,
+                                      ),
+                                      child: const Text('삭제'),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+
+                            if (confirmed == true && context.mounted) {
+                              try {
+                                // 삭제 API 호출
+                                await RoutineService().deleteRoutine(routineId);
+
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('루틴이 삭제되었습니다'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+
+                                  // 이전 화면으로 돌아가면서 새로고침 신호
+                                  Navigator.pop(context, true);
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('삭제 실패: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            }
                           },
                         ),
                       ],
@@ -113,8 +173,10 @@ class RoutineDetailScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>
-                          RoutineInProgressScreen(title: title),
+                      builder: (context) => RoutineInProgressScreen(
+                        routineId: routineId,
+                        title: title,
+                      ),
                     ),
                   );
                 },

@@ -17,7 +17,7 @@ class HomeScreen extends StatefulWidget {
 class HomeScreenState extends State<HomeScreen> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
-  Map<DateTime, List<Map<String, dynamic>>> _routines = {};
+  List<Map<String, dynamic>> _allRoutines = [];  // 모든 루틴 저장
   final ScrollController _scrollController = ScrollController();
   final RoutineService _routineService = RoutineService();
   final AuthService _authService = AuthService();
@@ -48,10 +48,9 @@ class HomeScreenState extends State<HomeScreen> {
       }
 
       final routines = await _routineService.getRoutines();
-      
-      // 루틴을 날짜별로 그룹화 (현재는 오늘 날짜에만 표시)
-      final today = _normalizeDate(DateTime.now());
-      final routinesForToday = routines.map((routine) {
+
+      // 모든 루틴을 저장 (요일 정보 포함)
+      final processedRoutines = routines.map((routine) {
         final time = routine['time'] as String;
         // 시간만 있는 경우, 30분 간격으로 가정
         final timeParts = time.split(':');
@@ -60,7 +59,12 @@ class HomeScreenState extends State<HomeScreen> {
         final endMinute = minute + 30;
         final endHour = endMinute >= 60 ? hour + 1 : hour;
         final endMin = endMinute >= 60 ? endMinute - 60 : endMinute;
-        
+
+        // days가 null이면 빈 리스트로 처리
+        final days = routine['days'] != null
+            ? List<int>.from(routine['days'])
+            : <int>[];
+
         return {
           'id': routine['id'],
           'title': routine['title'],
@@ -68,13 +72,14 @@ class HomeScreenState extends State<HomeScreen> {
           'end': '${endHour.toString().padLeft(2, '0')}:${endMin.toString().padLeft(2, '0')}',
           'category': routine['category'],
           'color': routine['color'],
+          'days': days,  // 반복 요일 (0=월, 1=화, ..., 6=일)
           'isUpdated': false,
           'isPinned': false,
         };
       }).toList();
 
       setState(() {
-        _routines = {today: routinesForToday};
+        _allRoutines = processedRoutines;
         _isLoading = false;
       });
 
@@ -85,10 +90,10 @@ class HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       debugPrint("❌ 루틴 로드 실패: $e");
       setState(() {
-        _routines = {};
+        _allRoutines = [];
         _isLoading = false;
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -100,11 +105,24 @@ class HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // 선택된 날짜에 해당하는 루틴만 필터링
+  List<Map<String, dynamic>> _getRoutinesForDate(DateTime date) {
+    // Dart weekday: 1=월, 2=화, ..., 7=일
+    // 우리 시스템: 0=월, 1=화, ..., 6=일
+    final dayIndex = date.weekday - 1;
+
+    return _allRoutines.where((routine) {
+      final days = routine['days'] as List<int>;
+      // days가 비어있으면 표시하지 않음 (요일 미설정 루틴)
+      if (days.isEmpty) return false;
+      return days.contains(dayIndex);
+    }).toList();
+  }
+
   void scrollToCurrentTime() {
     if (_scrollController.hasClients) {
       final now = DateTime.now();
-      final today = _normalizeDate(now);
-      final routines = _routines[today] ?? [];
+      final routines = _getRoutinesForDate(now);
 
       const double hourHeight = 110.0;
       const int startHour = 0;
@@ -129,11 +147,6 @@ class HomeScreenState extends State<HomeScreen> {
 
       _scrollController.jumpTo(scrollOffset);
     }
-  }
-
-
-  DateTime _normalizeDate(DateTime date) {
-    return DateTime(date.year, date.month, date.day);
   }
 
   @override
@@ -199,10 +212,10 @@ class HomeScreenState extends State<HomeScreen> {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-    
+
     final now = DateTime.now();
-    final selectedDate = _normalizeDate(_selectedDay ?? now);
-    final routines = _routines[selectedDate] ?? [];
+    final selectedDate = _selectedDay ?? now;
+    final routines = _getRoutinesForDate(selectedDate);
     final colors = Theme.of(context).extension<UphillColors>()!;
 
     // Timeline Config
@@ -210,6 +223,9 @@ class HomeScreenState extends State<HomeScreen> {
     const int startHour = 0;
     const int endHour = 24;
     const double leftMargin = 70.0;
+
+    // 겹치는 루틴 처리를 위한 레이아웃 계산
+    final layoutInfo = _calculateRoutineLayout(routines);
 
     return SingleChildScrollView(
       controller: _scrollController,
@@ -253,7 +269,11 @@ class HomeScreenState extends State<HomeScreen> {
                 ),
               )
             else
-              ...routines.map((routine) {
+              ...routines.asMap().entries.map((entry) {
+                final index = entry.key;
+                final routine = entry.value;
+                final layout = layoutInfo[index];
+
                 final start = _parseTime(routine['start'] as String);
                 final end = _parseTime(routine['end'] as String);
 
@@ -263,10 +283,13 @@ class HomeScreenState extends State<HomeScreen> {
                     (end.hour * 60 + end.minute) -
                     (start.hour * 60 + start.minute);
 
+                // 기본 너비 계산
+                final defaultWidth = MediaQuery.of(context).size.width - leftMargin - 40.0;
+
                 return Positioned(
                   top: (startMinutes / 60) * hourHeight,
-                  left: leftMargin,
-                  right: 0,
+                  left: leftMargin + (layout['offset'] ?? 0.0),
+                  width: layout['width'] ?? defaultWidth,
                   height:
                       (durationMinutes / 60) * hourHeight - 8, // margin bottom
                   child: RoutineCard(
@@ -279,12 +302,16 @@ class HomeScreenState extends State<HomeScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => RoutineDetailScreen(
+                            routineId: routine['id'].toString(),
                             title: routine['title'],
                             timeRange:
                                 '${routine['start']} - ${routine['end']}',
                           ),
                         ),
-                      );
+                      ).then((_) {
+                        // 상세 화면에서 돌아온 후 목록 새로고침
+                        _loadRoutines();
+                      });
                     },
                   ),
                 );
@@ -293,6 +320,60 @@ class HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  // 겹치는 루틴들의 레이아웃 계산
+  List<Map<String, double>> _calculateRoutineLayout(List<Map<String, dynamic>> routines) {
+    final List<Map<String, double>> layout = [];
+
+    for (int i = 0; i < routines.length; i++) {
+      final currentRoutine = routines[i];
+      final currentStart = _parseTime(currentRoutine['start'] as String);
+      final currentEnd = _parseTime(currentRoutine['end'] as String);
+      final currentStartMins = currentStart.hour * 60 + currentStart.minute;
+      final currentEndMins = currentEnd.hour * 60 + currentEnd.minute;
+
+      // 현재 루틴과 겹치는 다른 루틴들 찾기
+      final overlapping = <int>[];
+      for (int j = 0; j < routines.length; j++) {
+        if (i == j) continue;
+
+        final otherRoutine = routines[j];
+        final otherStart = _parseTime(otherRoutine['start'] as String);
+        final otherEnd = _parseTime(otherRoutine['end'] as String);
+        final otherStartMins = otherStart.hour * 60 + otherStart.minute;
+        final otherEndMins = otherEnd.hour * 60 + otherEnd.minute;
+
+        // 시간이 겹치는지 확인
+        if (!(currentEndMins <= otherStartMins || currentStartMins >= otherEndMins)) {
+          overlapping.add(j);
+        }
+      }
+
+      // 사용 가능한 전체 너비 계산 (좌측 margin 70, 좌우 padding 40 제외)
+      final availableWidth = MediaQuery.of(context).size.width - 70.0 - 40.0;
+
+      // 겹치는 루틴이 없으면 전체 너비 사용
+      if (overlapping.isEmpty) {
+        layout.add({'offset': 0.0, 'width': availableWidth});
+      } else {
+        // 겹치는 루틴이 있으면 너비를 나눠서 배치
+        final totalOverlapping = overlapping.length + 1;
+        int position = 0;
+
+        // 현재 루틴의 위치 찾기 (인덱스 순서대로)
+        for (int idx in overlapping) {
+          if (idx < i) position++;
+        }
+
+        final cardWidth = availableWidth / totalOverlapping;
+        final offset = cardWidth * position;
+
+        layout.add({'offset': offset, 'width': cardWidth - 4}); // 4px 간격
+      }
+    }
+
+    return layout;
   }
 
   TimeOfDay _parseTime(String timeStr) {

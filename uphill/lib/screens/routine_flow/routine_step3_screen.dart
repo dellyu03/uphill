@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import '../home_screen.dart';
+import '../../main_scaffold.dart';
 import '../../services/routine_service.dart';
 
 class RoutineStep3Screen extends StatefulWidget {
@@ -75,42 +75,45 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
             const SizedBox(height: 40),
             // Day Selector
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: List.generate(days.length, (index) {
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        selectedDays[index] = !selectedDays[index];
-                      });
-                    },
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: selectedDays[index]
-                            ? Colors.black
-                            : Colors.white,
-                        shape: BoxShape.circle,
-                        border: Border.all(
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          selectedDays[index] = !selectedDays[index];
+                        });
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                        height: 36,
+                        decoration: BoxDecoration(
                           color: selectedDays[index]
                               ? Colors.black
-                              : Colors.grey[300]!,
+                              : Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: selectedDays[index]
+                                ? Colors.black
+                                : Colors.grey[300]!,
+                          ),
                         ),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        days[index],
-                        style: TextStyle(
-                          color: selectedDays[index]
-                              ? Colors.white
-                              : Colors.grey[500],
-                          fontWeight: FontWeight.w600,
+                        alignment: Alignment.center,
+                        child: Text(
+                          days[index],
+                          style: TextStyle(
+                            color: selectedDays[index]
+                                ? Colors.white
+                                : Colors.grey[500],
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                     ),
@@ -180,17 +183,36 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
   }
 
   Future<void> _saveRoutine() async {
+    // 선택된 요일이 없으면 경고
+    final selectedDayIndices = <int>[];
+    for (int i = 0; i < selectedDays.length; i++) {
+      if (selectedDays[i]) {
+        selectedDayIndices.add(i);  // 0=월, 1=화, ..., 6=일
+      }
+    }
+
+    if (selectedDayIndices.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("요일을 하나 이상 선택해주세요"),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isSaving = true);
-    
+
     try {
       // 시작 시간을 HH:MM 형식으로 변환
       final timeStr = '${widget.startTime.hour.toString().padLeft(2, '0')}:${widget.startTime.minute.toString().padLeft(2, '0')}';
-      
+
       // 카테고리는 기본값으로 설정 (나중에 카테고리 선택 기능 추가 가능)
       await _routineService.createRoutine(
         title: widget.routineTitle,
         time: timeStr,
         category: '일반',
+        days: selectedDayIndices,
       );
 
       if (mounted) {
@@ -201,10 +223,10 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
           ),
         );
         
-        // 홈 화면으로 이동
+        // 메인 화면으로 이동 (바텀 네비게이션 포함)
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(builder: (context) => const MainScaffold()),
           (route) => false,
         );
       }

@@ -1,13 +1,16 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../services/routine_service.dart';
 
 class RoutineEditScreen extends StatefulWidget {
+  final String routineId;
   final String title;
   final String timeRange;
 
   const RoutineEditScreen({
     super.key,
+    required this.routineId,
     required this.title,
     required this.timeRange,
   });
@@ -68,14 +71,50 @@ class _RoutineEditScreenState extends State<RoutineEditScreen> {
     super.dispose();
   }
 
-  void _nextStep() {
+  void _nextStep() async {
     if (_currentStep < _totalSteps - 1) {
       setState(() {
         _currentStep++;
       });
     } else {
-      // Finish
-      Navigator.pop(context);
+      // Finish - 수정 API 호출
+      await _saveRoutine();
+    }
+  }
+
+  Future<void> _saveRoutine() async {
+    try {
+      // 시간 형식 변환 (HH:mm)
+      final startTimeStr = '${_startTime.hour.toString().padLeft(2, '0')}:${_startTime.minute.toString().padLeft(2, '0')}';
+
+      // 루틴 수정 API 호출
+      await RoutineService().updateRoutine(
+        routineId: widget.routineId,
+        title: _titleController.text,
+        time: startTimeStr,
+        category: _selectedPurpose,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('루틴이 수정되었습니다'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // 수정 완료 신호와 함께 이전 화면으로 돌아가기
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('수정 실패: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

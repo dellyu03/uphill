@@ -1,10 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../services/routine_service.dart';
 
 class RoutineInProgressScreen extends StatefulWidget {
+  final String routineId;
   final String title;
 
-  const RoutineInProgressScreen({super.key, required this.title});
+  const RoutineInProgressScreen({
+    super.key,
+    required this.routineId,
+    required this.title,
+  });
 
   @override
   State<RoutineInProgressScreen> createState() =>
@@ -14,10 +20,14 @@ class RoutineInProgressScreen extends StatefulWidget {
 class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
   late Stopwatch _stopwatch;
   late Timer _timer;
+  late DateTime _startedAt;
+  final RoutineService _routineService = RoutineService();
+  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
+    _startedAt = DateTime.now();
     _stopwatch = Stopwatch()..start();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
@@ -43,6 +53,48 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
     final String secondsStr = (seconds % 60).toString().padLeft(2, '0');
 
     return '$hoursStr:$minutesStr:$secondsStr';
+  }
+
+  Future<void> _handleStop() async {
+    if (_isSaving) return;
+
+    setState(() => _isSaving = true);
+    _stopwatch.stop();
+
+    final endedAt = DateTime.now();
+    final durationSeconds = _stopwatch.elapsedMilliseconds ~/ 1000;
+
+    try {
+      await _routineService.createExecution(
+        routineId: widget.routineId,
+        routineTitle: widget.title,
+        startedAt: _startedAt,
+        endedAt: endedAt,
+        durationSeconds: durationSeconds,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('루틴 수행이 기록되었습니다!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      debugPrint("❌ 수행 기록 저장 실패: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('기록 저장 실패: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        setState(() => _isSaving = false);
+        _stopwatch.start();
+      }
+    }
   }
 
   @override
@@ -99,11 +151,9 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
                 const SizedBox(width: 48),
                 _buildControlButton(
                   icon: Icons.stop,
-                  label: '종료',
+                  label: _isSaving ? '저장 중...' : '종료',
                   color: Colors.red,
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
+                  onTap: _isSaving ? () {} : _handleStop,
                 ),
               ],
             ),
@@ -137,7 +187,15 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
                 ),
               ],
             ),
-            child: Icon(icon, size: 40, color: color),
+            child: _isSaving && icon == Icons.stop
+                ? const Center(
+                    child: SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                : Icon(icon, size: 40, color: color),
           ),
         ),
         const SizedBox(height: 12),

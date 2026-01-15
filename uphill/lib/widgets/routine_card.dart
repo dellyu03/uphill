@@ -98,29 +98,17 @@ class RoutineCard extends StatelessWidget {
         children: [
           // Title and Time in one line or simplified
           Expanded(
-            child: Row(
-              children: [
-                Flexible(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: colors.textEmphasis,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  timeRange,
-                  style: TextStyle(fontSize: 12, color: colors.textMuted),
-                ),
-              ],
+            child: Text(
+              '$title  $timeRange',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: colors.textEmphasis,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
-
-          const SizedBox(width: 8),
           if (isUpdated)
             const RoutineBadge(type: RoutineBadgeType.update, isCompact: true)
           else if (isPinned)

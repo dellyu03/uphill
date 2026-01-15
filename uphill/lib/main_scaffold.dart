@@ -16,12 +16,13 @@ class MainScaffold extends StatefulWidget {
 class _MainScaffoldState extends State<MainScaffold> {
   int _currentIndex = 0;
   final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
+  final GlobalKey<FeedbackScreenState> _feedbackKey = GlobalKey<FeedbackScreenState>();
   final AuthService _authService = AuthService();
   bool _checkingAuth = true;
 
   late final List<Widget> _screens = [
     HomeScreen(key: _homeKey),
-    const FeedbackScreen(),
+    FeedbackScreen(key: _feedbackKey),
     const ProfileScreen(),
   ];
 
@@ -72,7 +73,7 @@ class _MainScaffoldState extends State<MainScaffold> {
                   borderRadius: BorderRadius.circular(30),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -100,6 +101,10 @@ class _MainScaffoldState extends State<MainScaffold> {
       onTap: () {
         if (index == 0 && _currentIndex == 0) {
           _homeKey.currentState?.scrollToCurrentTime();
+        }
+        // 피드백 탭으로 전환 시 새로고침
+        if (index == 1) {
+          _feedbackKey.currentState?.refreshFeedback();
         }
         setState(() {
           _currentIndex = index;
