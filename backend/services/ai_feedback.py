@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+from pathlib import Path
 from dotenv import load_dotenv
 from openai import OpenAI
 from api.schemas import DailySummaryResponse
@@ -13,6 +14,11 @@ logger = logging.getLogger(__name__)
 # OpenAI 클라이언트 초기화
 _openai_client = None
 
+# 프롬프트 파일 경로
+PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
+SYSTEM_PROMPT_FILE = PROMPTS_DIR / "feedback_system_prompt.txt"
+USER_PROMPT_TEMPLATE_FILE = PROMPTS_DIR / "feedback_user_prompt_template.txt"
+
 
 def get_openai_client() -> OpenAI:
     """OpenAI 클라이언트를 반환합니다 (lazy initialization)"""
@@ -23,6 +29,19 @@ def get_openai_client() -> OpenAI:
             raise ValueError("OPENAI_API_KEY 환경 변수가 설정되지 않았습니다")
         _openai_client = OpenAI(api_key=api_key)
     return _openai_client
+
+
+def load_prompt(file_path: Path) -> str:
+    """프롬프트 파일을 읽어옵니다."""
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        logger.error(f"프롬프트 파일을 찾을 수 없습니다: {file_path}")
+        raise
+    except Exception as e:
+        logger.error(f"프롬프트 파일 읽기 실패: {e}")
+        raise
 
 
 def generate_ai_feedback(summary: DailySummaryResponse) -> dict:
@@ -53,34 +72,24 @@ def generate_ai_feedback(summary: DailySummaryResponse) -> dict:
     try:
         client = get_openai_client()
 
-        prompt = f"""당신은 사용자의 일간 루틴 수행을 분석하고 따뜻하고 격려하는 피드백을 제공하는 AI 코치입니다.
+        # 외부 프롬프트 파일 로드
+        system_prompt = load_prompt(SYSTEM_PROMPT_FILE)
+        user_prompt_template = load_prompt(USER_PROMPT_TEMPLATE_FILE)
 
-오늘 날짜: {summary.date}
-완료한 루틴 수: {count}개
-총 수행 시간: {total_mins}분
-
-수행한 루틴 상세:
-{json.dumps(executions_detail, ensure_ascii=False, indent=2) if executions_detail else "없음"}
-
-위 정보를 바탕으로 다음 JSON 형식으로 피드백을 작성해주세요:
-{{
-    "short": "한 줄 요약 피드백 (20자 이내, 핵심 메시지)",
-    "full": "상세 피드백 (2-3문장, 격려와 구체적인 조언 포함)",
-    "recommendations": ["추천 루틴 1", "추천 루틴 2", "추천 루틴 3"]
-}}
-
-규칙:
-1. short는 감정을 담아 짧고 임팩트 있게 작성
-2. full은 오늘 수행한 루틴을 언급하며 구체적으로 격려
-3. recommendations는 수행한 루틴의 카테고리나 시간대를 고려하여 보완할 수 있는 루틴 추천
-4. 루틴이 없으면 시작하기 쉬운 간단한 루틴을 추천
-5. 반드시 유효한 JSON만 출력하세요."""
+        # 프롬프트 템플릿에 데이터 삽입
+        executions_json = json.dumps(executions_detail, ensure_ascii=False, indent=2) if executions_detail else "없음"
+        user_prompt = user_prompt_template.format(
+            date=summary.date,
+            count=count,
+            total_mins=total_mins,
+            executions_detail=executions_json
+        )
 
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "당신은 친근하고 따뜻한 루틴 코치입니다. 항상 긍정적이고 격려하는 톤으로 말합니다. JSON 형식으로만 응답하세요."},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
             ],
             temperature=0.7,
             max_tokens=500
