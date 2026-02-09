@@ -8,6 +8,10 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'firebase_options.dart';
 import 'screens/onboarding/login_screen.dart';
+import 'screens/onboarding/onboarding_step1_screen.dart';
+import 'screens/onboarding/onboarding_step2_screen.dart';
+import 'screens/onboarding/onboarding_step3_screen.dart';
+import 'screens/onboarding/onboarding_step4_screen.dart';
 import 'theme/app_theme.dart';
 import 'constants/app_constants.dart';
 
@@ -39,6 +43,13 @@ class MyApp extends StatelessWidget {
       ),
       // 메인 화면
       home: const LoginScreen(),
+      // 라우트 설정
+      routes: {
+        '/onboarding/step1': (context) => const OnboardingStep1Screen(),
+        '/onboarding/step2': (context) => const OnboardingStep2Screen(),
+        '/onboarding/step3': (context) => const OnboardingStep3Screen(),
+        '/onboarding/step4': (context) => const OnboardingStep4Screen(),
+      },
     );
   }
 }

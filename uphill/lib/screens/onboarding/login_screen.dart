@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../services/auth_service.dart';
+import '../../services/dummy_auth_service.dart';
 import '../../main_scaffold.dart';
+import 'onboarding_step1_screen.dart';
 
 /// Uphill 로그인 화면
 /// Figma 디자인을 기반으로 구현된 로그인 스크린
@@ -13,7 +14,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final AuthService _authService = AuthService();
+  final DummyAuthService _authService = DummyAuthService();
   bool _loading = false;
   bool _checkingAuth = true;
 
@@ -27,28 +28,107 @@ class _LoginScreenState extends State<LoginScreen> {
     final hasAuth = await _authService.loadStoredAuth();
     if (hasAuth && _authService.isLoggedIn) {
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MainScaffold()),
-        );
+        // 온보딩 완료 여부 확인
+        if (_authService.onboardingCompleted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const MainScaffold()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const OnboardingStep1Screen(),
+            ),
+          );
+        }
       }
     } else {
       setState(() => _checkingAuth = false);
     }
   }
 
-  Future<void> _signInWithGoogle() async {
+  Future<void> _showAccountSelection() async {
+    final emails = _authService.getAvailableEmails();
+
+    final selectedEmail = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text(
+          '테스트 계정 선택',
+          style: GoogleFonts.notoSansKr(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF1B1B1B),
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ...emails.map(
+              (email) => ListTile(
+                title: Text(
+                  email,
+                  style: GoogleFonts.notoSansKr(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                onTap: () => Navigator.pop(context, email),
+              ),
+            ),
+            const Divider(),
+            ListTile(
+              title: Text(
+                '새 계정 만들기',
+                style: GoogleFonts.notoSansKr(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF9CAA7D),
+                ),
+              ),
+              onTap: () => Navigator.pop(context, 'new_account'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (selectedEmail != null) {
+      if (selectedEmail == 'new_account') {
+        final newEmail =
+            'test${DateTime.now().millisecondsSinceEpoch}@test.com';
+        await _signInWithEmail(newEmail);
+      } else {
+        await _signInWithEmail(selectedEmail);
+      }
+    }
+  }
+
+  Future<void> _signInWithEmail(String email) async {
     setState(() => _loading = true);
 
     try {
-      final success = await _authService.signIn();
+      final success = await _authService.signIn(email);
 
       if (success && _authService.isLoggedIn) {
         if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const MainScaffold()),
-          );
+          // 신규 사용자는 온보딩으로, 기존 사용자는 메인으로
+          if (_authService.isNewUser || !_authService.onboardingCompleted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const OnboardingStep1Screen(),
+              ),
+            );
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const MainScaffold()),
+            );
+          }
         }
       } else {
         throw Exception("로그인에 실패했습니다");
@@ -64,16 +144,6 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() => _loading = false);
       }
     }
-  }
-
-  void _navigateToSignUp() {
-    // TODO: 회원가입 화면으로 이동
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("회원가입 기능은 준비 중입니다"),
-        duration: Duration(seconds: 2),
-      ),
-    );
   }
 
   @override
@@ -191,7 +261,7 @@ class _LoginScreenState extends State<LoginScreen> {
           width: double.infinity,
           height: 56,
           child: ElevatedButton(
-            onPressed: _loading ? null : _signInWithGoogle,
+            onPressed: _loading ? null : _showAccountSelection,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: const Color(0xFF1B1B1B),
@@ -250,7 +320,7 @@ class _LoginScreenState extends State<LoginScreen> {
           width: double.infinity,
           height: 56,
           child: ElevatedButton(
-            onPressed: _loading ? null : _navigateToSignUp,
+            onPressed: _loading ? null : _showAccountSelection,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: const Color(0xFF1B1B1B),

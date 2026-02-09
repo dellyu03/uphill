@@ -7,8 +7,8 @@ import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'screens/feedback_screen.dart';
 import 'screens/profile_screen.dart';
-import 'services/auth_service.dart';
-import 'login_test.dart';
+import 'services/dummy_auth_service.dart';
+import 'screens/onboarding/login_screen.dart';
 import 'constants/app_constants.dart';
 import 'theme/app_theme.dart';
 
@@ -33,7 +33,7 @@ class _MainScaffoldState extends State<MainScaffold> {
       GlobalKey<FeedbackScreenState>();
 
   /// 인증 서비스 싱글톤
-  final AuthService _authService = AuthService();
+  final DummyAuthService _authService = DummyAuthService();
 
   /// 인증 확인 중 여부
   bool _checkingAuth = true;
@@ -61,7 +61,7 @@ class _MainScaffoldState extends State<MainScaffold> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const GoogleLoginScreen()),
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
         );
       }
     } else {
