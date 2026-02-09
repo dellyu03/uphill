@@ -1,18 +1,37 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 import '../../main_scaffold.dart';
 import '../../services/routine_service.dart';
 
 class RoutineStep3Screen extends StatefulWidget {
   final String routineTitle;
+
+  // Step 1 Data
+  final String purpose;
+  final String space;
+  final String description;
+
+  // Step 2 Data
+  final bool isFlexible;
   final TimeOfDay startTime;
-  final TimeOfDay endTime;
-  
+  final TimeOfDay?
+  endTime; // Can be null if not flexible or not set? Actually mandatory in design but let's see. logic says mandatory.
+  final List<int> selectedDays; // Indices
+  final String? notificationTime;
+
   const RoutineStep3Screen({
     super.key,
     required this.routineTitle,
+    required this.purpose,
+    required this.space,
+    required this.description,
+    required this.isFlexible,
     required this.startTime,
     required this.endTime,
+    required this.selectedDays,
+    this.notificationTime,
   });
 
   @override
@@ -20,11 +39,16 @@ class RoutineStep3Screen extends StatefulWidget {
 }
 
 class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
-  final List<String> days = ['월', '화', '수', '목', '금', '토', '일'];
-  final List<bool> selectedDays = List.generate(7, (index) => false);
-  bool isAlarmOn = false;
   final RoutineService _routineService = RoutineService();
   bool _isSaving = false;
+
+  // IoT Devices State
+  // Structure: { 'type': '조명', 'value': 50 }
+  final List<Map<String, dynamic>> _iotDevices = [
+    {'type': '조명', 'value': 80.0}, // Default 1 item
+  ];
+
+  final List<String> _deviceTypes = ['조명', '커튼', '공기청정기', '가습기', '스피커'];
 
   @override
   Widget build(BuildContext context) {
@@ -37,9 +61,9 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           '루틴 등록',
-          style: TextStyle(
+          style: GoogleFonts.notoSans(
             color: Colors.black,
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -47,172 +71,376 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
         ),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 10),
-            // Progress Bar (Step 3)
-            Row(
-              children: [
-                Expanded(child: Container(height: 4, color: Colors.black)),
-                const SizedBox(width: 8),
-                Expanded(child: Container(height: 4, color: Colors.black)),
-                const SizedBox(width: 8),
-                Expanded(child: Container(height: 4, color: Colors.black)),
-              ],
-            ),
-            const SizedBox(height: 32),
-            const Text(
-              '요일과 알림을\n설정해주세요',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 40),
-            // Day Selector
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(days.length, (index) {
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedDays[index] = !selectedDays[index];
-                        });
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 2),
-                        height: 36,
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 10),
+                    // Progress Bar (Step 3 - Full)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(height: 4, color: Colors.black),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Container(height: 4, color: Colors.black),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Container(height: 4, color: Colors.black),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+                    Text(
+                      'IOT사물 연동\n설정해주세요',
+                      style: GoogleFonts.notoSans(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Floor Plan Placeholder
+                    // Figma design shows a specific floor plan. Using a placeholder for now.
+                    Container(
+                      width: double.infinity,
+                      height: 200,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        border: Border.all(color: Colors.grey[300]!),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.apartment,
+                            size: 60,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            "공간 도면",
+                            style: TextStyle(color: Colors.grey[500]),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Space Solution
+                    Text(
+                      '공간 변경 솔루션',
+                      style: GoogleFonts.notoSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey[200]!),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '솔루션',
+                                style: GoogleFonts.notoSans(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const Icon(
+                                Icons.edit,
+                                size: 16,
+                                color: Colors.grey,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '침대 옆 협탁을 치우고 요가매트를 깔아보세요',
+                            style: GoogleFonts.notoSans(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // IoT Device List
+                    Text(
+                      'IOT 연동',
+                      style: GoogleFonts.notoSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    ...List.generate(_iotDevices.length, (index) {
+                      final device = _iotDevices[index];
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: selectedDays[index]
-                              ? Colors.black
-                              : Colors.white,
-                          shape: BoxShape.circle,
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey[200]!),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'IOT 사물 (${index + 1})',
+                                  style: GoogleFonts.notoSans(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                if (_iotDevices.length > 1)
+                                  GestureDetector(
+                                    onTap: () => _removeIoTDevice(index),
+                                    child: const Icon(
+                                      Icons.close,
+                                      size: 18,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                SizedBox(
+                                  width: 60,
+                                  child: Text(
+                                    '사물 종류',
+                                    style: GoogleFonts.notoSans(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[100],
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: DropdownButtonHideUnderline(
+                                      child: DropdownButton<String>(
+                                        value: device['type'],
+                                        isExpanded: true,
+                                        items: _deviceTypes.map((type) {
+                                          return DropdownMenuItem(
+                                            value: type,
+                                            child: Text(
+                                              type,
+                                              style: GoogleFonts.notoSans(
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                        onChanged: (value) {
+                                          if (value != null) {
+                                            setState(() {
+                                              device['type'] = value;
+                                            });
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (device['type'] == '조명') ...[
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '밝기',
+                                    style: GoogleFonts.notoSans(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    '최대 밝기', // Or dynamic based on value
+                                    style: GoogleFonts.notoSans(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              SizedBox(
+                                width: double.infinity,
+                                child: CupertinoSlider(
+                                  value: device['value'] as double,
+                                  min: 0,
+                                  max: 100,
+                                  activeColor: Colors.grey[600],
+                                  thumbColor: Colors.white,
+                                  onChanged: (val) {
+                                    setState(() {
+                                      device['value'] = val;
+                                    });
+                                  },
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      );
+                    }),
+
+                    // Add Button
+                    GestureDetector(
+                      onTap: _addIoTDevice,
+                      child: Container(
+                        height: 50,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: selectedDays[index]
-                                ? Colors.black
-                                : Colors.grey[300]!,
+                            color: Colors.grey[300]!,
+                            style: BorderStyle
+                                .solid, // Dashed unsupported in standard container, using solid grey for now or custom painter if needed. keeping simple.
+                            // Actually user might want dashed. But solid grey light is okay.
                           ),
                         ),
                         alignment: Alignment.center,
                         child: Text(
-                          days[index],
-                          style: TextStyle(
-                            color: selectedDays[index]
-                                ? Colors.white
-                                : Colors.grey[500],
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
+                          '+ IOT 연동 추가하기',
+                          style: GoogleFonts.notoSans(
+                            color: Colors.grey[600],
+                            fontSize: 14,
                           ),
                         ),
                       ),
                     ),
-                  );
-                }),
-              ),
-            ),
-            const SizedBox(height: 24),
-            // Alarm Toggle
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    '시작 알림 받기',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                  ),
-                  CupertinoSwitch(
-                    value: isAlarmOn,
-                    activeColor: Colors.black,
-                    onChanged: (value) {
-                      setState(() {
-                        isAlarmOn = value;
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: _isSaving ? null : _saveRoutine,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+                    const SizedBox(height: 100), // Bottom padding
+                  ],
                 ),
-                child: _isSaving
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : const Text(
-                        '완료',
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                      ),
               ),
             ),
-            const SizedBox(height: 24),
+
+            // Fixed Bottom Button
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _isSaving ? null : _saveRoutine,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(
+                      0xFF383B45,
+                    ), // Dark grey from design
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : Text(
+                          '완료',
+                          style: GoogleFonts.notoSans(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
+  void _addIoTDevice() {
+    setState(() {
+      _iotDevices.add({'type': '조명', 'value': 50.0});
+    });
+  }
+
+  void _removeIoTDevice(int index) {
+    setState(() {
+      _iotDevices.removeAt(index);
+    });
+  }
+
   Future<void> _saveRoutine() async {
-    // 선택된 요일이 없으면 경고
-    final selectedDayIndices = <int>[];
-    for (int i = 0; i < selectedDays.length; i++) {
-      if (selectedDays[i]) {
-        selectedDayIndices.add(i);  // 0=월, 1=화, ..., 6=일
-      }
-    }
-
-    if (selectedDayIndices.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("요일을 하나 이상 선택해주세요"),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
     setState(() => _isSaving = true);
 
     try {
-      // 시작 시간을 HH:MM 형식으로 변환
-      final timeStr = '${widget.startTime.hour.toString().padLeft(2, '0')}:${widget.startTime.minute.toString().padLeft(2, '0')}';
+      // 1. Convert TimeOfDay to String HH:MM
+      final startTimeStr =
+          '${widget.startTime.hour.toString().padLeft(2, '0')}:${widget.startTime.minute.toString().padLeft(2, '0')}';
 
-      // 카테고리는 기본값으로 설정 (나중에 카테고리 선택 기능 추가 가능)
+      String? endTimeStr;
+      if (widget.endTime != null) {
+        endTimeStr =
+            '${widget.endTime!.hour.toString().padLeft(2, '0')}:${widget.endTime!.minute.toString().padLeft(2, '0')}';
+      }
+
+      // 3. Call Service
       await _routineService.createRoutine(
         title: widget.routineTitle,
-        time: timeStr,
-        category: '일반',
-        days: selectedDayIndices,
+        time: startTimeStr, // Main start time
+        category: '일반', // Fixed for now
+        days: widget.selectedDays, // Already List<int>
+        // Extended Fields
+        purpose: widget.purpose,
+        space: widget.space,
+        description: widget.description,
+        isFlexible: widget.isFlexible,
+        endTime: endTimeStr,
+        notificationTime: widget.notificationTime, // Already String?
+        iotDevices: _iotDevices,
       );
 
       if (mounted) {
@@ -222,8 +450,8 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
             backgroundColor: Colors.green,
           ),
         );
-        
-        // 메인 화면으로 이동 (바텀 네비게이션 포함)
+
+        // Navigate to Home/Main
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const MainScaffold()),
@@ -234,10 +462,7 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
       debugPrint("❌ 루틴 생성 실패: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("루틴 생성 실패: $e"),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text("루틴 생성 실패: $e"), backgroundColor: Colors.red),
         );
         setState(() => _isSaving = false);
       }
