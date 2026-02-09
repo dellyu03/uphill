@@ -36,7 +36,7 @@ class _OnboardingStep2ScreenState extends State<OnboardingStep2Screen> {
         _showPermissionPermanentlyDeniedDialog();
       }
     } catch (e) {
-      print('카메라 권한 요청 오류: $e');
+      debugPrint('카메라 권한 요청 오류: $e');
       _showErrorDialog();
     } finally {
       if (mounted) {
@@ -72,7 +72,7 @@ class _OnboardingStep2ScreenState extends State<OnboardingStep2Screen> {
         arguments: {'hasCamera': true, 'camera': camera},
       );
     } catch (e) {
-      print('카메라 초기화 오류: $e');
+      debugPrint('카메라 초기화 오류: $e');
       _showErrorDialog();
     }
   }
@@ -322,7 +322,7 @@ class _OnboardingStep2ScreenState extends State<OnboardingStep2Screen> {
       width: 240,
       height: 240,
       decoration: BoxDecoration(
-        color: const Color(0xFF9CAA7D).withOpacity(0.3),
+        color: const Color(0xFF9CAA7D).withValues(alpha: 0.3),
         shape: BoxShape.circle,
       ),
       child: Center(
@@ -359,7 +359,7 @@ class _OnboardingStep2ScreenState extends State<OnboardingStep2Screen> {
                 foregroundColor: const Color(0xFF1B1B1B),
                 elevation: 0,
                 disabledBackgroundColor: const Color(0xFFD1D1D1),
-                shadowColor: Colors.black.withOpacity(0.04),
+                shadowColor: Colors.black.withValues(alpha: 0.04),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
                 ),
@@ -405,7 +405,7 @@ class _OnboardingStep2ScreenState extends State<OnboardingStep2Screen> {
                 foregroundColor: const Color(0xFF1B1B1B),
                 elevation: 0,
                 disabledBackgroundColor: const Color(0xFFD1D1D1),
-                shadowColor: Colors.black.withOpacity(0.04),
+                shadowColor: Colors.black.withValues(alpha: 0.04),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
                 ),

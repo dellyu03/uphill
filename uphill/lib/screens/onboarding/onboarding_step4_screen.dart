@@ -159,7 +159,7 @@ class _OnboardingStep4ScreenState extends State<OnboardingStep4Screen> {
                     fontWeight: FontWeight.w600,
                     color: _selectedHour == hour
                         ? const Color(0xFF1B1B1B)
-                        : const Color(0xFF1B1B1B).withOpacity(0.3),
+                        : const Color(0xFF1B1B1B).withValues(alpha: 0.3),
                     letterSpacing: -0.96,
                   ),
                 ),
@@ -181,7 +181,7 @@ class _OnboardingStep4ScreenState extends State<OnboardingStep4Screen> {
                     fontWeight: FontWeight.w600,
                     color: _selectedMinute == index
                         ? const Color(0xFF1B1B1B)
-                        : const Color(0xFF1B1B1B).withOpacity(0.3),
+                        : const Color(0xFF1B1B1B).withValues(alpha: 0.3),
                     letterSpacing: -0.96,
                   ),
                 ),
@@ -204,7 +204,7 @@ class _OnboardingStep4ScreenState extends State<OnboardingStep4Screen> {
                     fontWeight: FontWeight.w600,
                     color: _selectedPeriod == period
                         ? const Color(0xFF1B1B1B)
-                        : const Color(0xFF1B1B1B).withOpacity(0.3),
+                        : const Color(0xFF1B1B1B).withValues(alpha: 0.3),
                     letterSpacing: -0.96,
                   ),
                 ),
@@ -247,7 +247,7 @@ class _OnboardingStep4ScreenState extends State<OnboardingStep4Screen> {
           backgroundColor: Colors.white,
           foregroundColor: const Color(0xFF1B1B1B),
           elevation: 0,
-          shadowColor: Colors.black.withOpacity(0.04),
+          shadowColor: Colors.black.withValues(alpha: 0.04),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
           ),

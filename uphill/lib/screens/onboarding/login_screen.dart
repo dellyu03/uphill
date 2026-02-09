@@ -236,13 +236,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 Icon(
                   Icons.task_alt,
                   size: 120,
-                  color: const Color(0xFF1B1B1B).withOpacity(0.6),
+                  color: const Color(0xFF1B1B1B).withValues(alpha: 0.6),
                 ),
                 const SizedBox(height: 16),
                 Icon(
                   Icons.person,
                   size: 80,
-                  color: const Color(0xFF1B1B1B).withOpacity(0.8),
+                  color: const Color(0xFF1B1B1B).withValues(alpha: 0.8),
                 ),
               ],
             ),
@@ -265,7 +265,7 @@ class _LoginScreenState extends State<LoginScreen> {
               backgroundColor: Colors.white,
               foregroundColor: const Color(0xFF1B1B1B),
               elevation: 0,
-              shadowColor: Colors.black.withOpacity(0.04),
+              shadowColor: Colors.black.withValues(alpha: 0.04),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(18),
               ),
@@ -323,7 +323,7 @@ class _LoginScreenState extends State<LoginScreen> {
               backgroundColor: Colors.white,
               foregroundColor: const Color(0xFF1B1B1B),
               elevation: 0,
-              shadowColor: Colors.black.withOpacity(0.04),
+              shadowColor: Colors.black.withValues(alpha: 0.04),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(18),
               ),

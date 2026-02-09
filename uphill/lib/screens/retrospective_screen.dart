@@ -92,7 +92,7 @@ class RetrospectiveScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 15,
                 offset: const Offset(0, 5),
               ),
@@ -125,12 +125,14 @@ class RetrospectiveScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: const Color(0xFFF2F2F2),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.black.withOpacity(0.03)),
+                  border: Border.all(
+                    color: Colors.black.withValues(alpha: 0.03),
+                  ),
                 ),
                 child: Center(
                   child: Icon(
                     Icons.image_outlined,
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     size: 48,
                   ),
                 ),
