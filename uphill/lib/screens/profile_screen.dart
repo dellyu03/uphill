@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import '../services/auth_service.dart';
-import '../login_test.dart';
+import '../services/dummy_auth_service.dart';
+import 'onboarding/login_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -9,7 +9,7 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<UphillColors>()!;
-    final authService = AuthService();
+    final authService = DummyAuthService();
     final userInfo = authService.userInfo;
 
     return Scaffold(
@@ -73,7 +73,10 @@ class ProfileScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text(
                     userInfo?['name'] ?? '사용자',
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -95,8 +98,8 @@ class ProfileScreen extends StatelessWidget {
             ]),
             const SizedBox(height: 24),
             _buildSection('활동', [
-              _buildListTile(Icons.bar_chart, '통계 보기'),
-              _buildListTile(Icons.workspace_premium, '뱃지 보관함'),
+              _buildListTile(Icons.bar_chart, '이용 약관'),
+              _buildListTile(Icons.workspace_premium, '개인정보 처리방침'),
             ]),
             const SizedBox(height: 24),
             _buildSection('지원', [
@@ -105,17 +108,23 @@ class ProfileScreen extends StatelessWidget {
             ]),
             const SizedBox(height: 24),
             _buildSection('계정', [
-              _buildListTile(Icons.logout, '로그아웃', onTap: () async {
-                final authService = AuthService();
-                await authService.signOut();
-                if (context.mounted) {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => const GoogleLoginScreen()),
-                    (route) => false,
-                  );
-                }
-              }),
+              _buildListTile(
+                Icons.logout,
+                '로그아웃',
+                onTap: () async {
+                  final authService = DummyAuthService();
+                  await authService.signOut();
+                  if (context.mounted) {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LoginScreen(),
+                      ),
+                      (route) => false,
+                    );
+                  }
+                },
+              ),
             ]),
           ],
         ),
