@@ -8,6 +8,7 @@ import 'dart:convert';
 
 import '../constants/app_constants.dart';
 import 'auth_service.dart';
+import 'dummy_auth_service.dart';
 
 /// 루틴 서비스 (Singleton)
 /// 백엔드 API와 통신하여 루틴 데이터를 관리합니다.
@@ -19,6 +20,7 @@ class RoutineService {
 
   /// 인증 서비스 싱글톤
   final AuthService _authService = AuthService();
+  final DummyAuthService _dummyAuthService = DummyAuthService();
 
   // ===== 루틴 CRUD API =====
 
@@ -26,6 +28,13 @@ class RoutineService {
   /// [Backend 요청] GET /routines
   /// 사용자의 모든 루틴 목록을 반환합니다.
   Future<List<Map<String, dynamic>>> getRoutines() async {
+    // 1. 더미 로그인 확인
+    if (_dummyAuthService.isLoggedIn) {
+      debugPrint('🔄 [Dummy] 루틴 목록 조회');
+      // 더미 데이터 반환
+      return _getDummyRoutines();
+    }
+
     try {
       final authHeader = _authService.getAuthHeader();
       if (authHeader == null) {
@@ -57,18 +66,45 @@ class RoutineService {
 
   /// 루틴 생성
   /// [Backend 요청] POST /routines
-  /// [title] 루틴 제목
-  /// [time] 시작 시간 (HH:MM)
-  /// [category] 카테고리
-  /// [color] 색상 (선택)
-  /// [days] 반복 요일 (0=월, 1=화, ..., 6=일)
   Future<Map<String, dynamic>> createRoutine({
     required String title,
     required String time,
     required String category,
     String? color,
     List<int>? days,
+    // 프리미엄 UI 추가 필드
+    String? purpose,
+    String? space,
+    String? description,
+    bool? isFlexible,
+    String? notificationTime,
+    String? endTime, // 지속 시간 종료
+    List<Map<String, dynamic>>? iotDevices, // IOT 장비 설정
   }) async {
+    // 1. 더미 로그인 확인
+    if (_dummyAuthService.isLoggedIn) {
+      debugPrint('🔄 [Dummy] 루틴 생성: $title');
+      debugPrint('   - Purpose: $purpose');
+      debugPrint('   - Space: $space');
+      debugPrint('   - Devices: ${iotDevices?.length}');
+
+      return {
+        'id': 'dummy_${DateTime.now().millisecondsSinceEpoch}',
+        'title': title,
+        'time': time, // Start Time
+        'category': category,
+        'color': color ?? '#9CAA7D',
+        'days': days ?? [],
+        'purpose': purpose,
+        'space': space,
+        'description': description,
+        'is_flexible': isFlexible,
+        'notification_time': notificationTime,
+        'end_time': endTime,
+        'iot_devices': iotDevices,
+      };
+    }
+
     try {
       final authHeader = _authService.getAuthHeader();
       if (authHeader == null) {
@@ -76,19 +112,27 @@ class RoutineService {
       }
 
       // [Backend 요청] 루틴 생성
+      // 백엔드가 아직 새 필드를 지원하지 않을 수 있으므로,
+      // 지원하는 필드만 보내거나, 필요시 'meta' 필드 등에 담아서 보낼 수 있음.
+      // 여기서는 일단 기존 필드 + 가능한 필드만 전송한다고 가정.
+      final body = {
+        'title': title,
+        'time': time,
+        'category': category,
+        if (color != null) 'color': color,
+        if (days != null) 'days': days,
+        // 필요시 백엔드 스펙에 맞춰 추가전송
+        if (purpose != null) 'purpose': purpose,
+        if (space != null) 'space': space,
+      };
+
       final response = await http.post(
         Uri.parse('${ApiConstants.baseUrl}${ApiConstants.routines}'),
         headers: {
           'Authorization': authHeader,
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({
-          'title': title,
-          'time': time,
-          'category': category,
-          if (color != null) 'color': color,
-          if (days != null) 'days': days,
-        }),
+        body: jsonEncode(body),
       );
 
       if (response.statusCode == 201) {
@@ -106,7 +150,6 @@ class RoutineService {
 
   /// 루틴 수정
   /// [Backend 요청] PUT /routines/{id}
-  /// [routineId] 루틴 ID
   Future<Map<String, dynamic>> updateRoutine({
     required String routineId,
     String? title,
@@ -115,6 +158,19 @@ class RoutineService {
     String? color,
     List<int>? days,
   }) async {
+    // 1. 더미 로그인 확인
+    if (_dummyAuthService.isLoggedIn) {
+      debugPrint('🔄 [Dummy] 루틴 수정: $routineId');
+      return {
+        'id': routineId,
+        'title': title ?? '수정된 루틴',
+        'time': time ?? '09:00',
+        'category': category ?? '건강',
+        'color': color ?? '#9CAA7D',
+        'days': days ?? [],
+      };
+    }
+
     try {
       final authHeader = _authService.getAuthHeader();
       if (authHeader == null) {
@@ -153,8 +209,13 @@ class RoutineService {
 
   /// 루틴 삭제
   /// [Backend 요청] DELETE /routines/{id}
-  /// [routineId] 루틴 ID
   Future<void> deleteRoutine(String routineId) async {
+    // 1. 더미 로그인 확인
+    if (_dummyAuthService.isLoggedIn) {
+      debugPrint('🔄 [Dummy] 루틴 삭제: $routineId');
+      return;
+    }
+
     try {
       final authHeader = _authService.getAuthHeader();
       if (authHeader == null) {
@@ -184,11 +245,6 @@ class RoutineService {
 
   /// 루틴 수행 기록 저장
   /// [Backend 요청] POST /executions/{routineId}
-  /// [routineId] 루틴 ID
-  /// [routineTitle] 루틴 제목
-  /// [startedAt] 시작 시간
-  /// [endedAt] 종료 시간
-  /// [durationSeconds] 수행 시간 (초)
   Future<Map<String, dynamic>> createExecution({
     required String routineId,
     required String routineTitle,
@@ -196,6 +252,19 @@ class RoutineService {
     required DateTime endedAt,
     required int durationSeconds,
   }) async {
+    // 1. 더미 로그인 확인
+    if (_dummyAuthService.isLoggedIn) {
+      debugPrint('🔄 [Dummy] 수행 기록 저장: $routineTitle');
+      return {
+        'id': 'dummy_exec_${DateTime.now().millisecondsSinceEpoch}',
+        'routine_id': routineId,
+        'routine_title': routineTitle,
+        'started_at': startedAt.toUtc().toIso8601String(),
+        'ended_at': endedAt.toUtc().toIso8601String(),
+        'duration_seconds': durationSeconds,
+      };
+    }
+
     try {
       final authHeader = _authService.getAuthHeader();
       if (authHeader == null) {
@@ -235,8 +304,18 @@ class RoutineService {
 
   /// 일간 수행 기록 조회
   /// [Backend 요청] GET /executions/daily?date={date}
-  /// [date] 조회 날짜 (YYYY-MM-DD)
   Future<Map<String, dynamic>> getDailyExecutions(String date) async {
+    // 1. 더미 로그인 확인
+    if (_dummyAuthService.isLoggedIn) {
+      debugPrint('🔄 [Dummy] 일간 기록 조회: $date');
+      return {
+        'date': date,
+        'executions': [],
+        'total_duration_seconds': 0,
+        'total_count': 0,
+      };
+    }
+
     try {
       final authHeader = _authService.getAuthHeader();
       if (authHeader == null) {
@@ -245,7 +324,9 @@ class RoutineService {
 
       // [Backend 요청] 일간 수행 기록 조회
       final response = await http.get(
-        Uri.parse('${ApiConstants.baseUrl}${ApiConstants.executions}/daily?date=$date'),
+        Uri.parse(
+          '${ApiConstants.baseUrl}${ApiConstants.executions}/daily?date=$date',
+        ),
         headers: {
           'Authorization': authHeader,
           'Content-Type': 'application/json',
@@ -267,8 +348,21 @@ class RoutineService {
 
   /// 일간 AI 피드백 조회
   /// [Backend 요청] GET /executions/daily/{date}/feedback
-  /// [date] 조회 날짜 (YYYY-MM-DD)
   Future<Map<String, dynamic>> getDailyFeedback(String date) async {
+    // 1. 더미 로그인 확인
+    if (_dummyAuthService.isLoggedIn) {
+      debugPrint('🔄 [Dummy] AI 피드백 조회: $date');
+      return {
+        'date': date,
+        'ai_feedback_short': '침대에서 너무 많은 시간을 보내고 있어요',
+        'ai_feedback_full':
+            '이러이러한 루틴을 추가해 보는것이 어떤가요? 이러이러한 루틴을 추가해 보는것이 어떤가요? 이러이러한 루틴을 추가해 보는것이 어떤가요...',
+        'recommended_routines': ['명상하기', '스트레칭'],
+        'background_image_url': 'assets/images/img_feedback_background.png',
+        'summary': {'total_routines': 3, 'total_duration_seconds': 1800},
+      };
+    }
+
     try {
       final authHeader = _authService.getAuthHeader();
       if (authHeader == null) {
@@ -297,5 +391,43 @@ class RoutineService {
       debugPrint('❌ 피드백 조회 에러: $e');
       rethrow;
     }
+  }
+
+  // ===== 더미 데이터 =====
+  List<Map<String, dynamic>> _getDummyRoutines() {
+    return [
+      {
+        'id': 1,
+        'title': '모닝 스트레칭',
+        'time': '07:00',
+        'category': '건강',
+        'color': '#FF9E9E',
+        'days': [0, 1, 2, 3, 4], // 월~금
+      },
+      {
+        'id': 2,
+        'title': '독서 30분',
+        'time': '20:00',
+        'category': '자기계발',
+        'color': '#9E9EFF',
+        'days': [0, 1, 2, 3, 4, 5, 6], // 매일
+      },
+      {
+        'id': 3,
+        'title': '영양제 먹기',
+        'time': '08:00',
+        'category': '건강',
+        'color': '#9EFF9E',
+        'days': [0, 1, 2, 3, 4, 5, 6], // 매일
+      },
+      {
+        'id': 4,
+        'title': '영어 단어 암기',
+        'time': '21:00',
+        'category': '학습',
+        'color': '#FFFF9E',
+        'days': [0, 2, 4], // 월, 수, 금
+      },
+    ];
   }
 }

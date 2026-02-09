@@ -3,6 +3,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_theme.dart';
 import '../widgets/date_strip.dart';
@@ -12,6 +13,7 @@ import 'routine_flow/routine_step1_screen.dart';
 import 'routine_detail_screen.dart';
 import '../services/routine_service.dart';
 import '../services/auth_service.dart';
+import '../services/dummy_auth_service.dart';
 
 /// 홈 화면 위젯
 /// 시간대별 루틴 타임라인을 표시합니다.
@@ -42,6 +44,7 @@ class HomeScreenState extends State<HomeScreen> {
 
   /// 인증 서비스 싱글톤
   final AuthService _authService = AuthService();
+  final DummyAuthService _dummyAuthService = DummyAuthService();
 
   /// 로딩 상태
   bool _isLoading = true;
@@ -58,6 +61,10 @@ class HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  /// 로그인 여부 확인
+  bool get _isLoggedIn =>
+      _authService.isLoggedIn || _dummyAuthService.isLoggedIn;
+
   /// 루틴 목록 로드
   /// [Backend 요청] GET /routines - 사용자 루틴 목록 조회
   Future<void> _loadRoutines() async {
@@ -65,9 +72,11 @@ class HomeScreenState extends State<HomeScreen> {
 
     try {
       // 로그인 확인
-      if (!_authService.isLoggedIn) {
+      if (!_isLoggedIn) {
         final loaded = await _authService.loadStoredAuth();
-        if (!loaded) {
+        final dummyLoaded = await _dummyAuthService.loadStoredAuth();
+
+        if (!loaded && !dummyLoaded) {
           if (mounted) {
             setState(() => _isLoading = false);
           }
@@ -128,8 +137,9 @@ class HomeScreenState extends State<HomeScreen> {
       final endMin = endMinute >= 60 ? endMinute - 60 : endMinute;
 
       // days가 null이면 빈 리스트로 처리
-      final days =
-          routine['days'] != null ? List<int>.from(routine['days']) : <int>[];
+      final days = routine['days'] != null
+          ? List<int>.from(routine['days'])
+          : <int>[];
 
       return {
         'id': routine['id'],
@@ -223,18 +233,17 @@ class HomeScreenState extends State<HomeScreen> {
   /// 상단 앱바 위젯
   Widget _buildCustomAppBar() {
     return Padding(
-      padding: const EdgeInsets.all(LayoutConstants.horizontalPadding),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // "Today" 타이틀
           Text(
             TextConstants.homeTitle,
-            style: const TextStyle(
-              fontSize: 40,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF4A4A4A),
-              letterSpacing: -0.5,
+            style: GoogleFonts.montserrat(
+              fontSize: 32, // Adjusted size
+              fontWeight: FontWeight.w600
+              color: const Color(0xFF2D2D2D), // Darker grey
             ),
           ),
         ],
@@ -259,17 +268,21 @@ class HomeScreenState extends State<HomeScreen> {
   Widget _buildAddRoutineFab() {
     return FloatingActionButton(
       onPressed: _onAddRoutinePressed,
-      backgroundColor: Colors.black,
-      child: const Icon(Icons.add, color: Colors.white),
+      backgroundColor: const Color(0xFF1C1C1E), // Almost black
+      elevation: 4,
+      shape: const CircleBorder(),
+      child: const Icon(Icons.add, color: Colors.white, size: 28),
     );
   }
 
   /// 루틴 추가 버튼 핸들러
   Future<void> _onAddRoutinePressed() async {
     // 로그인 확인
-    if (!_authService.isLoggedIn) {
+    if (!_isLoggedIn) {
       final loaded = await _authService.loadStoredAuth();
-      if (!loaded) {
+      final dummyLoaded = await _dummyAuthService.loadStoredAuth();
+
+      if (!loaded && !dummyLoaded) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -312,7 +325,8 @@ class HomeScreenState extends State<HomeScreen> {
     return SingleChildScrollView(
       controller: _scrollController,
       child: Container(
-        height: (LayoutConstants.endHour - LayoutConstants.startHour) *
+        height:
+            (LayoutConstants.endHour - LayoutConstants.startHour) *
                 LayoutConstants.hourHeight +
             50,
         padding: const EdgeInsets.symmetric(
@@ -359,12 +373,41 @@ class HomeScreenState extends State<HomeScreen> {
 
   /// 빈 상태 위젯
   Widget _buildEmptyState() {
-    return Positioned(
-      top: 50,
-      left: LayoutConstants.timelineLeftMargin,
-      child: Text(
-        TextConstants.noRoutinesMessage,
-        style: const TextStyle(color: Colors.black54),
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: 60),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F5F5),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.format_list_bulleted_rounded,
+              size: 48,
+              color: Color(0xFFC6C5C3),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '등록된 루틴이 없습니다',
+            style: GoogleFonts.notoSansKr(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF8E8E93),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '새로운 루틴을 추가해보세요',
+            style: GoogleFonts.notoSansKr(
+              fontSize: 14,
+              color: const Color(0xFFAEAEB2),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -374,7 +417,8 @@ class HomeScreenState extends State<HomeScreen> {
     List<Map<String, dynamic>> routines,
     List<Map<String, double>> layoutInfo,
   ) {
-    final defaultWidth = MediaQuery.of(context).size.width -
+    final defaultWidth =
+        MediaQuery.of(context).size.width -
         LayoutConstants.timelineLeftMargin -
         LayoutConstants.horizontalPadding * 2;
 
@@ -458,7 +502,8 @@ class HomeScreenState extends State<HomeScreen> {
       }
 
       // 사용 가능한 전체 너비 계산
-      final availableWidth = MediaQuery.of(context).size.width -
+      final availableWidth =
+          MediaQuery.of(context).size.width -
           LayoutConstants.timelineLeftMargin -
           LayoutConstants.horizontalPadding * 2;
 

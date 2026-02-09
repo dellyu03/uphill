@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import 'routine_badge.dart';
 
@@ -100,7 +101,7 @@ class RoutineCard extends StatelessWidget {
           Expanded(
             child: Text(
               '$title  $timeRange',
-              style: TextStyle(
+              style: GoogleFonts.notoSansKr(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: colors.textEmphasis,
@@ -135,7 +136,7 @@ class RoutineCard extends StatelessWidget {
             Expanded(
               child: Text(
                 title,
-                style: TextStyle(
+                style: GoogleFonts.notoSansKr(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: colors.textEmphasis,
@@ -153,7 +154,12 @@ class RoutineCard extends StatelessWidget {
         SizedBox(height: tightSpacing ? 2 : 6),
         Text(
           timeRange,
-          style: TextStyle(fontSize: 13, color: colors.textMuted, height: 1.2),
+          style: GoogleFonts.montserrat(
+            fontSize: 13,
+            color: colors.textMuted,
+            height: 1.2,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
     );
