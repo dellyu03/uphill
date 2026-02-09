@@ -5,7 +5,6 @@ import '../../main_scaffold.dart';
 import 'onboarding_step1_screen.dart';
 
 /// Uphill 로그인 화면
-/// Figma 디자인을 기반으로 구현된 로그인 스크린
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -286,17 +285,24 @@ class _LoginScreenState extends State<LoginScreen> {
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Image.network(
-                        'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
+                      Container(
                         width: 24,
                         height: 24,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Icon(
-                            Icons.login,
-                            size: 24,
-                            color: Color(0xFF1B1B1B),
-                          );
-                        },
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'G',
+                            style: GoogleFonts.roboto(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF4285F4),
+                            ),
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Text(
