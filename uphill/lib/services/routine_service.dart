@@ -157,6 +157,14 @@ class RoutineService {
     String? category,
     String? color,
     List<int>? days,
+    // 프리미엄 UI 추가 필드
+    String? purpose,
+    String? space,
+    String? description,
+    bool? isFlexible,
+    String? notificationTime,
+    String? endTime,
+    List<Map<String, dynamic>>? iotDevices,
   }) async {
     // 1. 더미 로그인 확인
     if (_dummyAuthService.isLoggedIn) {
@@ -168,6 +176,13 @@ class RoutineService {
         'category': category ?? '건강',
         'color': color ?? '#9CAA7D',
         'days': days ?? [],
+        'purpose': purpose,
+        'space': space,
+        'description': description,
+        'is_flexible': isFlexible,
+        'notification_time': notificationTime,
+        'end_time': endTime,
+        'iot_devices': iotDevices,
       };
     }
 
@@ -183,6 +198,14 @@ class RoutineService {
       if (category != null) body['category'] = category;
       if (color != null) body['color'] = color;
       if (days != null) body['days'] = days;
+      if (purpose != null) body['purpose'] = purpose;
+      if (space != null) body['space'] = space;
+      if (description != null) body['description'] = description;
+      if (isFlexible != null) body['is_flexible'] = isFlexible;
+      if (notificationTime != null)
+        body['notification_time'] = notificationTime;
+      if (endTime != null) body['end_time'] = endTime;
+      if (iotDevices != null) body['iot_devices'] = iotDevices;
 
       // [Backend 요청] 루틴 수정
       final response = await http.put(
@@ -393,40 +416,117 @@ class RoutineService {
     }
   }
 
+  /// 루틴 단건 조회
+  /// [Backend 요청] GET /routines/{id}
+  Future<Map<String, dynamic>> getRoutine(String routineId) async {
+    // 1. 더미 로그인 확인
+    if (_dummyAuthService.isLoggedIn) {
+      debugPrint('🔄 [Dummy] 루틴 단건 조회: $routineId');
+      final routines = _getDummyRoutines();
+      final routine = routines.firstWhere(
+        (element) => element['id'].toString() == routineId,
+        orElse: () => {},
+      );
+
+      if (routine.isEmpty) {
+        throw Exception('루틴을 찾을 수 없습니다.');
+      }
+      return routine;
+    }
+
+    try {
+      final authHeader = _authService.getAuthHeader();
+      if (authHeader == null) {
+        throw Exception(TextConstants.loginRequired);
+      }
+
+      // [Backend 요청] 루틴 단건 조회
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}${ApiConstants.routines}/$routineId'),
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else if (response.statusCode == 401) {
+        throw Exception(TextConstants.authExpired);
+      } else {
+        throw Exception('루틴 조회 실패: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('❌ 루틴 단건 조회 에러: $e');
+      rethrow;
+    }
+  }
+
   // ===== 더미 데이터 =====
   List<Map<String, dynamic>> _getDummyRoutines() {
     return [
       {
-        'id': 1,
+        'id': '1',
         'title': '모닝 스트레칭',
         'time': '07:00',
-        'category': '건강',
+        'end_time': '07:30',
+        'category': '건강', // purpose
+        'purpose': '건강',
         'color': '#FF9E9E',
         'days': [0, 1, 2, 3, 4], // 월~금
+        'space': '방 1',
+        'description': '편안한 분위기에서 가벼운 스트레칭',
+        'is_flexible': true,
+        'notification_time': '10분 전',
+        'iot_devices': [
+          {'type': '조명', 'brightness': 0.8, 'hasBrightness': true},
+          {'type': '커튼', 'brightness': 0.0, 'hasBrightness': false},
+        ],
       },
       {
-        'id': 2,
+        'id': '2',
         'title': '독서 30분',
         'time': '20:00',
+        'end_time': '20:30',
         'category': '자기계발',
+        'purpose': '자기계발',
         'color': '#9E9EFF',
-        'days': [0, 1, 2, 3, 4, 5, 6], // 매일
+        'days': [0, 1, 2, 3, 4, 5, 6],
+        'space': '거실',
+        'description': '조용한 분위기에서 독서',
+        'is_flexible': false,
+        'notification_time': '30분 전',
+        'iot_devices': [],
       },
       {
-        'id': 3,
+        'id': '3',
         'title': '영양제 먹기',
         'time': '08:00',
+        'end_time': '08:05',
         'category': '건강',
+        'purpose': '건강',
         'color': '#9EFF9E',
-        'days': [0, 1, 2, 3, 4, 5, 6], // 매일
+        'days': [0, 1, 2, 3, 4, 5, 6],
+        'space': '주방',
+        'description': '',
+        'is_flexible': true,
+        'notification_time': '5분 전',
+        'iot_devices': [],
       },
       {
-        'id': 4,
+        'id': '4',
         'title': '영어 단어 암기',
         'time': '21:00',
+        'end_time': '21:30',
         'category': '학습',
+        'purpose': '학습',
         'color': '#FFFF9E',
-        'days': [0, 2, 4], // 월, 수, 금
+        'days': [0, 2, 4],
+        'space': '방 2',
+        'description': '집중할 수 있는 환경',
+        'is_flexible': false,
+        'notification_time': '1시간 전',
+        'iot_devices': [],
       },
     ];
   }
