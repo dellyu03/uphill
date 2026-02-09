@@ -7,7 +7,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'firebase_options.dart';
-import 'main_scaffold.dart';
+import 'screens/onboarding/login_screen.dart';
 import 'theme/app_theme.dart';
 import 'constants/app_constants.dart';
 
@@ -38,7 +38,7 @@ class MyApp extends StatelessWidget {
         extensions: const <ThemeExtension<dynamic>>[UphillColors.light],
       ),
       // 메인 화면
-      home: const MainScaffold(),
+      home: const LoginScreen(),
     );
   }
 }
