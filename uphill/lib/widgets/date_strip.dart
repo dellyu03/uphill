@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../theme/app_theme.dart';
 
 class DateStrip extends StatelessWidget {
   final DateTime selectedDate;
@@ -14,27 +14,23 @@ class DateStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Generate dates: Today - 2 days to Today + 4 days (Total 7)
-    // Or just a static week based on mockup logic
     final now = DateTime.now();
-    // Normalize now to midnight
+    // Generate dates: Today - 2 days to Today + 4 days (Total 7)
     final today = DateTime(now.year, now.month, now.day);
 
-    // Generate list around selectedDate or Today
-    // Let's create a range of dates.
     final dates = List.generate(7, (index) {
-      return today.add(
-        Duration(days: index - 2),
-      ); // 2 days before, 4 days after
+      return today.add(Duration(days: index - 2));
     });
 
     return SizedBox(
-      height: 90,
+      height: 85, // Figma Height adjusted
       child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 24,
+        ), // Increased padding
         scrollDirection: Axis.horizontal,
         itemCount: dates.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        separatorBuilder: (_, __) => const SizedBox(width: 10), // Gaps
         itemBuilder: (context, index) {
           final date = dates[index];
           final bool isSelected =
@@ -60,34 +56,45 @@ class _DateItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).extension<UphillColors>()!;
+    // Figma Colors inferred
+    // Selected: Background almost black/dark grey, Text White
+    // Unselected: Transparent, Text Grey
+
     final dayStr = DateFormat('d').format(date);
-    final weekStr = DateFormat('E').format(date).toUpperCase(); // SUN, MON...
+    final weekStr = DateFormat('E').format(date).toUpperCase();
 
     return Container(
-      width: 60,
+      width: 54, // Figma width approx
+      margin: const EdgeInsets.symmetric(
+        vertical: 4,
+      ), // Margin for shadow if needed
       decoration: BoxDecoration(
-        color: isSelected ? colors.dateSelectedBg : Colors.transparent,
-        borderRadius: BorderRadius.circular(30), // Capsule shape
+        color: isSelected
+            ? const Color(0xFF434343)
+            : Colors.transparent, // Dark grey for selected
+        borderRadius: BorderRadius.circular(20),
+        border: isSelected ? null : Border.all(color: Colors.transparent),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          // Day Number
           Text(
             dayStr,
-            style: TextStyle(
+            style: GoogleFonts.montserrat(
               fontSize: 20,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              color: isSelected ? Colors.black87 : Colors.black38,
+              fontWeight: FontWeight.w600,
+              color: isSelected ? Colors.white : const Color(0xFFC6C5C3),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
+          // Weekday
           Text(
             weekStr,
-            style: TextStyle(
-              fontSize: 12,
+            style: GoogleFonts.montserrat(
+              fontSize: 10,
               fontWeight: FontWeight.w500,
-              color: isSelected ? Colors.black87 : Colors.black38,
+              color: isSelected ? Colors.white : const Color(0xFFC6C5C3),
             ),
           ),
         ],
