@@ -202,8 +202,9 @@ class RoutineService {
       if (space != null) body['space'] = space;
       if (description != null) body['description'] = description;
       if (isFlexible != null) body['is_flexible'] = isFlexible;
-      if (notificationTime != null)
+      if (notificationTime != null) {
         body['notification_time'] = notificationTime;
+      }
       if (endTime != null) body['end_time'] = endTime;
       if (iotDevices != null) body['iot_devices'] = iotDevices;
 

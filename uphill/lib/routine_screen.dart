@@ -11,7 +11,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
   int _selectedDateIndex = 0; // Default to the 1st item (Today)
   int _selectedIndex = 0; // Bottom nav index
 
-  List<Map<String, dynamic>> _dates = [];
+  final List<Map<String, dynamic>> _dates = [];
 
   @override
   void initState() {
@@ -250,7 +250,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                               borderRadius: BorderRadius.circular(20),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
+                                  color: Colors.black.withValues(alpha: 0.1),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -324,7 +324,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
           borderRadius: BorderRadius.circular(35),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 20,
               offset: const Offset(0, 5),
             ),
@@ -368,7 +368,7 @@ class DottedLinePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.grey.withOpacity(0.5)
+      ..color = Colors.grey.withValues(alpha: 0.5)
       ..strokeWidth = 1
       ..strokeCap = StrokeCap.round;
 

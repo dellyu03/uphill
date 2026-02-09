@@ -247,7 +247,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                                 Switch(
                                   value: true, // Dummy status
                                   onChanged: (val) {},
-                                  activeColor: Colors.black,
+                                  activeTrackColor: Colors.black,
                                 ),
                               ],
                             ),

@@ -242,7 +242,7 @@ class HomeScreenState extends State<HomeScreen> {
             TextConstants.homeTitle,
             style: GoogleFonts.montserrat(
               fontSize: 32, // Adjusted size
-              fontWeight: FontWeight.w600
+              fontWeight: FontWeight.w600,
               color: const Color(0xFF2D2D2D), // Darker grey
             ),
           ),

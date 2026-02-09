@@ -41,8 +41,11 @@ class FeedbackScreenState extends State<FeedbackScreen>
   String _aiFeedbackShort = '';
   String _aiFeedbackFull = '';
   List<String> _recommendedRoutines = [];
+  // ignore: unused_field
   int _totalRoutines = 0;
+  // ignore: unused_field
   int _totalDurationSeconds = 0;
+
   String? _backgroundImageUrl;
 
   @override
