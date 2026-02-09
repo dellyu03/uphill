@@ -9,6 +9,7 @@ import '../theme/app_theme.dart';
 import '../constants/app_constants.dart';
 import '../services/routine_service.dart';
 import '../services/auth_service.dart';
+import '../services/dummy_auth_service.dart';
 
 /// 피드백 화면 위젯
 /// 주간 피드백과 일간 AI 피드백을 표시합니다.
@@ -28,6 +29,7 @@ class FeedbackScreenState extends State<FeedbackScreen>
 
   /// 인증 서비스 싱글톤
   final AuthService _authService = AuthService();
+  final DummyAuthService _dummyAuthService = DummyAuthService();
 
   /// 로딩 상태
   bool _isLoading = true;
@@ -41,6 +43,7 @@ class FeedbackScreenState extends State<FeedbackScreen>
   List<String> _recommendedRoutines = [];
   int _totalRoutines = 0;
   int _totalDurationSeconds = 0;
+  String? _backgroundImageUrl;
 
   @override
   void initState() {
@@ -68,6 +71,10 @@ class FeedbackScreenState extends State<FeedbackScreen>
     _loadDailyFeedback();
   }
 
+  /// 로그인 여부 확인
+  bool get _isLoggedIn =>
+      _authService.isLoggedIn || _dummyAuthService.isLoggedIn;
+
   /// 일간 피드백 로드
   /// [Backend 요청] GET /executions/daily/{date}/feedback
   Future<void> _loadDailyFeedback() async {
@@ -80,9 +87,11 @@ class FeedbackScreenState extends State<FeedbackScreen>
 
     try {
       // 로그인 확인
-      if (!_authService.isLoggedIn) {
+      if (!_isLoggedIn) {
         final loaded = await _authService.loadStoredAuth();
-        if (!loaded) {
+        final dummyLoaded = await _dummyAuthService.loadStoredAuth();
+
+        if (!loaded && !dummyLoaded) {
           if (!mounted) return;
           setState(() {
             _isLoading = false;
@@ -121,14 +130,17 @@ class FeedbackScreenState extends State<FeedbackScreen>
     setState(() {
       _aiFeedbackShort = feedback['ai_feedback_short'] ?? '';
       _aiFeedbackFull = feedback['ai_feedback_full'] ?? '';
-      _recommendedRoutines =
-          List<String>.from(feedback['recommended_routines'] ?? []);
+      _recommendedRoutines = List<String>.from(
+        feedback['recommended_routines'] ?? [],
+      );
 
       final summary = feedback['summary'] as Map<String, dynamic>?;
       if (summary != null) {
         _totalRoutines = summary['total_routines'] ?? 0;
         _totalDurationSeconds = summary['total_duration_seconds'] ?? 0;
       }
+
+      _backgroundImageUrl = feedback['background_image_url'];
 
       debugPrint('📝 파싱된 피드백 - short: $_aiFeedbackShort');
       debugPrint('📝 추천 루틴: $_recommendedRoutines');
@@ -147,11 +159,6 @@ class FeedbackScreenState extends State<FeedbackScreen>
       _recommendedRoutines = TextConstants.defaultRecommendedRoutines;
       _errorMessage = null;
     });
-  }
-
-  /// 날짜 포맷팅
-  String _formatDate(DateTime date) {
-    return '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -173,11 +180,17 @@ class FeedbackScreenState extends State<FeedbackScreen>
               // 헤더 - "Feedback" 타이틀
               _buildHeader(),
               const SizedBox(height: 24),
-              // 주간 피드백 카드
-              _buildWeeklyCard(colors),
-              const SizedBox(height: 16),
-              // 일간 AI 피드백 카드
-              Expanded(child: _buildInsightCard(colors)),
+
+              // 피드백 데이터가 없으면 빈 상태 표시
+              if (_aiFeedbackShort.isEmpty && !_isLoading)
+                Expanded(child: _buildEmptyState(colors))
+              else ...[
+                // 주간 피드백 카드
+                _buildWeeklyCard(colors),
+                const SizedBox(height: 16),
+                // 일간 AI 피드백 카드
+                Expanded(child: _buildInsightCard(colors)),
+              ],
               const SizedBox(height: 80),
             ],
           ),
@@ -198,19 +211,65 @@ class FeedbackScreenState extends State<FeedbackScreen>
     );
   }
 
-  /// 주간 피드백 카드 위젯
+  /// 빈 상태 위젯 (Figma 646:1225)
+  Widget _buildEmptyState(UphillColors colors) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // 빈 상태 이미지 (Mailbox)
+        // 실제 이미지가 없으므로 아이콘으로 대체, 추후 이미지 asset으로 교체 필요
+        Container(
+          width: 200,
+          height: 200,
+          decoration: BoxDecoration(
+            color: const Color(0xFFC0CC90), // Figma 유사 색상
+            shape: BoxShape.circle,
+          ),
+          child: ClipOval(
+            child: Image.asset(
+              'assets/images/img_feedback_empty.png',
+              width: 200,
+              height: 200,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return const Icon(
+                  Icons.mail_outline,
+                  size: 100,
+                  color: Colors.white,
+                );
+              },
+            ),
+          ),
+        ),
+        const SizedBox(height: 32),
+        // 안내 텍스트
+        Text(
+          '아직 도착한 피드백이 없어요.',
+          style: GoogleFonts.notoSansKr(
+            fontSize: 18,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF4A4A4A),
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 100), // 시각적 중심 보정
+      ],
+    );
+  }
+
+  /// 주간 피드백 카드 위젯 (Figma 487:2499 Top Card)
   Widget _buildWeeklyCard(UphillColors colors) {
+    // Figma 상 날짜 예시: 12 04
     final now = DateTime.now();
     final dateDisplay =
         '${now.month.toString().padLeft(2, '0')} ${now.day.toString().padLeft(2, '0')}';
 
-    // 주간 피드백 카드 컨테이너
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
       decoration: BoxDecoration(
-        color: colors.feedbackCardWeekBg,
-        borderRadius: BorderRadius.circular(LayoutConstants.largeBorderRadius),
+        color: const Color(0xFFD9D9D9), // Figma Design Color
+        borderRadius: BorderRadius.circular(30), // Figma Radius
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,9 +278,9 @@ class FeedbackScreenState extends State<FeedbackScreen>
           Text(
             dateDisplay,
             style: GoogleFonts.montserrat(
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: colors.feedbackCardWeekText,
+              color: const Color(0xFF636363),
             ),
           ),
           const SizedBox(height: 4),
@@ -229,33 +288,32 @@ class FeedbackScreenState extends State<FeedbackScreen>
           Text(
             'Weekly feedback',
             style: GoogleFonts.montserrat(
-              fontSize: 20,
+              fontSize: 24,
               fontWeight: FontWeight.w600,
-              color: colors.feedbackCardWeekText,
+              color: const Color(0xFF636363),
+              letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           // Check 버튼
           SizedBox(
             width: double.infinity,
-            height: 48,
+            height: 52,
             child: ElevatedButton(
               onPressed: () {},
               style: ElevatedButton.styleFrom(
-                backgroundColor: colors.feedbackBtnCheckBg,
+                backgroundColor: const Color(0xFF434343), // Figma Design Color
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    LayoutConstants.cardBorderRadius,
-                  ),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 elevation: 0,
               ),
               child: Text(
                 'Check',
                 style: GoogleFonts.montserrat(
-                  fontSize: 16,
+                  fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: colors.feedbackBtnCheckText,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -265,7 +323,7 @@ class FeedbackScreenState extends State<FeedbackScreen>
     );
   }
 
-  /// 일간 인사이트 카드 위젯
+  /// 일간 인사이트 카드 위젯 (Figma 487:2499 Bottom Card)
   Widget _buildInsightCard(UphillColors colors) {
     // 로딩 상태
     if (_isLoading) {
@@ -277,8 +335,133 @@ class FeedbackScreenState extends State<FeedbackScreen>
       return _buildErrorCard(colors);
     }
 
-    // 정상 상태
-    return _buildContentCard(colors);
+    final now = DateTime.now();
+
+    // 배경 이미지 프로바이더 결정
+    ImageProvider? imageProvider;
+    if (_backgroundImageUrl != null) {
+      if (_backgroundImageUrl!.startsWith('http')) {
+        imageProvider = NetworkImage(_backgroundImageUrl!);
+      } else {
+        imageProvider = AssetImage(_backgroundImageUrl!);
+      }
+    }
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFF3A3A3A),
+        borderRadius: BorderRadius.circular(30),
+        image: imageProvider != null
+            ? DecorationImage(
+                image: imageProvider,
+                fit: BoxFit.cover,
+                colorFilter: const ColorFilter.mode(
+                  Colors.black38, // 이미지 어둡게 처리
+                  BlendMode.darken,
+                ),
+              )
+            : null,
+      ),
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // New 배지
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6A7154).withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        'New!',
+                        style: GoogleFonts.montserrat(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    // 날짜
+                    Text(
+                      '${now.month}/${now.day.toString().padLeft(2, '0')}',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+
+                // 메인 피드백 텍스트
+                Text(
+                  _aiFeedbackShort.isNotEmpty
+                      ? _aiFeedbackShort
+                      : '오늘의 루틴을 완료해보세요',
+                  style: GoogleFonts.notoSansKr(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // 서브 피드백 텍스트 (추천 문구)
+                Text(
+                  _aiFeedbackFull.isNotEmpty
+                      ? _aiFeedbackFull
+                      : '루틴을 수행하면 더 정확한 피드백을 받을 수 있어요.',
+                  style: GoogleFonts.notoSansKr(
+                    fontSize: 14,
+                    color: Colors.white.withOpacity(0.8),
+                    height: 1.5,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 24),
+
+                // 피드백 더보기 버튼
+                GestureDetector(
+                  onTap: () {},
+                  child: Row(
+                    children: [
+                      Text(
+                        '피드백 더보기',
+                        style: GoogleFonts.notoSansKr(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.arrow_forward,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// 로딩 카드 위젯
@@ -287,8 +470,8 @@ class FeedbackScreenState extends State<FeedbackScreen>
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: colors.feedbackCardDailyBg,
-        borderRadius: BorderRadius.circular(LayoutConstants.largeBorderRadius),
+        color: const Color(0xFF333333),
+        borderRadius: BorderRadius.circular(30),
       ),
       child: const Center(
         child: CircularProgressIndicator(color: Colors.white),
@@ -302,176 +485,34 @@ class FeedbackScreenState extends State<FeedbackScreen>
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: colors.feedbackCardDailyBg,
-        borderRadius: BorderRadius.circular(LayoutConstants.largeBorderRadius),
+        color: const Color(0xFF333333),
+        borderRadius: BorderRadius.circular(30),
       ),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 에러 아이콘
-            Icon(
-              Icons.error_outline,
-              color: colors.feedbackCardDailyText,
-              size: 48,
-            ),
+            const Icon(Icons.error_outline, color: Colors.white, size: 48),
             const SizedBox(height: 16),
-            // 에러 메시지
             Text(
-              _errorMessage!,
-              style: GoogleFonts.montserrat(
-                fontSize: 16,
-                color: colors.feedbackCardDailyText,
-              ),
+              _errorMessage ?? '오류가 발생했습니다.',
+              style: GoogleFonts.notoSansKr(fontSize: 16, color: Colors.white),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            // 다시 시도 버튼
             TextButton(
               onPressed: _loadDailyFeedback,
               child: Text(
                 '다시 시도',
-                style: GoogleFonts.montserrat(
+                style: GoogleFonts.notoSansKr(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: colors.feedbackCardDailyText,
+                  color: Colors.white,
                 ),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  /// 콘텐츠 카드 위젯
-  Widget _buildContentCard(UphillColors colors) {
-    final now = DateTime.now();
-
-    // 추천 루틴 한마디 생성
-    final recommendationText = _buildRecommendationText();
-
-    // 일간 피드백 카드 컨테이너
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: colors.feedbackCardDailyBg,
-        borderRadius: BorderRadius.circular(LayoutConstants.largeBorderRadius),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // New 배지
-          _buildNewBadge(colors),
-          const Spacer(),
-          // 날짜
-          Text(
-            _formatDate(now),
-            style: GoogleFonts.montserrat(
-              fontSize: 14,
-              color: colors.feedbackCardDailyText.withValues(alpha: 0.8),
-            ),
-          ),
-          const SizedBox(height: 8),
-          // AI 한 줄 피드백
-          Text(
-            _aiFeedbackShort.isNotEmpty
-                ? _aiFeedbackShort
-                : '오늘의 피드백을 준비 중이에요',
-            style: GoogleFonts.montserrat(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: colors.feedbackCardDailyText,
-              height: 1.3,
-            ),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 12),
-          // 추천 루틴 한마디
-          Text(
-            recommendationText.isNotEmpty
-                ? recommendationText
-                : '루틴을 완료하면 맞춤 추천을 받을 수 있어요!',
-            style: GoogleFonts.montserrat(
-              fontSize: 12,
-              color: colors.feedbackCardDailyText.withValues(alpha: 0.7),
-              height: 1.5,
-            ),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 20),
-          // 피드백 더보기 버튼
-          _buildMoreButton(colors),
-        ],
-      ),
-    );
-  }
-
-  /// New 배지 위젯
-  Widget _buildNewBadge(UphillColors colors) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: colors.feedbackBadgeNewBg,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        'New!',
-        style: GoogleFonts.montserrat(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: colors.feedbackBadgeNewText,
-        ),
-      ),
-    );
-  }
-
-  /// 추천 텍스트 생성
-  String _buildRecommendationText() {
-    if (_recommendedRoutines.isEmpty) return '';
-
-    var text = "'${_recommendedRoutines.first}' 루틴을 추가해 보는 건 어떨까요?";
-    if (_recommendedRoutines.length > 1) {
-      text +=
-          " ${_recommendedRoutines.sublist(1).map((r) => "'$r'").join(', ')}도 추천해요!";
-    }
-    return text;
-  }
-
-  /// 더보기 버튼 위젯
-  Widget _buildMoreButton(UphillColors colors) {
-    return GestureDetector(
-      onTap: () {
-        // TODO: 더보기 기능 구현
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('더보기 기능은 준비 중이에요'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      },
-      child: Row(
-        children: [
-          // "피드백 더보기" 텍스트
-          Text(
-            '피드백 더보기',
-            style: GoogleFonts.montserrat(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: colors.feedbackCardDailyText,
-            ),
-          ),
-          const SizedBox(width: 4),
-          // 화살표 아이콘
-          Icon(
-            Icons.arrow_forward,
-            size: 16,
-            color: colors.feedbackCardDailyText,
-          ),
-        ],
       ),
     );
   }
