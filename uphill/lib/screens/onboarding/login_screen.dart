@@ -288,20 +288,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       Container(
                         width: 24,
                         height: 24,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: Center(
-                          child: Text(
-                            'G',
-                            style: GoogleFonts.roboto(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF4285F4),
-                            ),
-                          ),
+                        color: Colors.white,
+                        child: Image.asset(
+                          'assets/images/google_icon.png',
+                          width: 24,
+                          height: 24,
+                          fit: BoxFit.contain,
                         ),
                       ),
                       const SizedBox(width: 12),
