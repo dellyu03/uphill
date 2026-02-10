@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../services/routine_service.dart';
 import 'routine_edit_screen.dart';
 import 'routine_in_progress_screen.dart';
-import '../theme/app_theme.dart';
 
 class RoutineDetailScreen extends StatefulWidget {
   final String routineId;
@@ -37,30 +36,9 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Theme colors
-    final theme = Theme.of(context);
-    final uphillColors = theme.extension<UphillColors>();
-    final textColor = uphillColors?.textEmphasis ?? Colors.black;
-    final mutedColor = uphillColors?.textMuted ?? Colors.grey;
-    final cardBgColor = Colors.white;
-    final borderColor = uphillColors?.dateSelectedBg ?? Colors.black12;
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F6F6),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: textColor),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.more_horiz, color: textColor),
-            onPressed: _showMoreOptions,
-          ),
-        ],
-      ),
+      backgroundColor: const Color(0xFFEEEDEC), // Figma Background
+      appBar: _buildAppBar(),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _routineFuture,
         builder: (context, snapshot) {
@@ -73,206 +51,152 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
           }
 
           final data = snapshot.data!;
-          final purpose = data['purpose'] ?? '기타';
+          final title = data['title'] ?? widget.title;
+          final purpose = data['purpose'] ?? '운동';
+          final description = data['description'] ?? '설명이 없습니다.';
           final space = data['space'] ?? '설정되지 않음';
-          final description = data['description'] ?? '';
-          final iotDevices = List<Map<String, dynamic>>.from(
-            data['iot_devices'] ?? [],
-          );
-          final isFlexible = data['is_flexible'] ?? true;
-          final notificationTime = data['notification_time'] ?? '알림 없음';
           final days = List<int>.from(data['days'] ?? []);
 
-          return Column(
+          final startTime = data['time'] ?? '00:00';
+          final endTime = data['end_time'] ?? '00:00';
+
+          return Stack(
             children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 10),
-                      // Title & Time Section
-                      Text(
-                        data['title'] ?? widget.title,
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: cardBgColor,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: borderColor),
-                        ),
-                        child: Text(
-                          widget.timeRange, // Or reconstruct from data['time']
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: mutedColor,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 32),
-                      _buildSectionTitle('루틴 정보', textColor),
-                      const SizedBox(height: 12),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: cardBgColor,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: borderColor),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildInfoRow('목적', purpose, textColor, mutedColor),
-                            const SizedBox(height: 16),
-                            _buildInfoRow(
-                              '성격',
-                              isFlexible ? '변동가능' : '고정',
-                              textColor,
-                              mutedColor,
-                            ),
-                            const SizedBox(height: 16),
-                            _buildInfoRow(
-                              '반복',
-                              _formatDays(days),
-                              textColor,
-                              mutedColor,
-                            ),
-                            const SizedBox(height: 16),
-                            _buildInfoRow(
-                              '알림',
-                              notificationTime,
-                              textColor,
-                              mutedColor,
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 32),
-                      _buildSectionTitle('공간 및 환경', textColor),
-                      const SizedBox(height: 12),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: cardBgColor,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: borderColor),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildInfoRow('공간', space, textColor, mutedColor),
-                            if (description.isNotEmpty) ...[
-                              const SizedBox(height: 16),
-                              Text(
-                                '환경 설명',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: mutedColor,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                description,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: textColor,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-
-                      if (iotDevices.isNotEmpty) ...[
-                        const SizedBox(height: 32),
-                        _buildSectionTitle('IoT 기기', textColor),
-                        const SizedBox(height: 12),
-                        ...iotDevices.map(
-                          (device) => Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: cardBgColor,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: borderColor),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.power, // Placeholder icon
-                                  color: textColor,
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        device['type'] ?? '기기',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                          color: textColor,
-                                        ),
-                                      ),
-                                      if (device['hasBrightness'] == true)
-                                        Text(
-                                          '밝기: ${(device['brightness'] * 100).toInt()}%',
-                                          style: TextStyle(
-                                            color: mutedColor,
-                                            fontSize: 13,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                                Switch(
-                                  value: true, // Dummy status
-                                  onChanged: (val) {},
-                                  activeTrackColor: Colors.black,
-                                ),
-                              ],
+              SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.only(bottom: 120),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 10),
+                    // 1. Header Area
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '진행 중인 루틴',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.black.withValues(alpha: 0.6),
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
-                        ),
-                      ],
-                      const SizedBox(height: 100), // Bottom padding for button
-                    ],
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, -5),
+                          const SizedBox(height: 4),
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontSize: 29,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // 2. Info Area (Purpose, Description)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '목적 | $purpose',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            description,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.black,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 48),
+
+                    // 3. Visual Section (Image + Graphics)
+                    _buildVisualSection(),
+
+                    const SizedBox(height: 40),
+
+                    // 4. Environment
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 35.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            '루틴환경',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
+                            ),
+                          ),
+                          Text(
+                            space,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF363636),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // 5. Solution Card
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 18.0),
+                      child: _buildSolutionCard(),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // 6. Time & Repeat Card
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '루틴 지속 시간',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildTimeCard(startTime, endTime, _formatDays(days)),
+                        ],
+                      ),
                     ),
                   ],
                 ),
+              ),
+
+              // Floating Button
+              Positioned(
+                left: 24,
+                right: 24,
+                bottom: 34,
                 child: SizedBox(
-                  width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
                     onPressed: () {
@@ -281,7 +205,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                         MaterialPageRoute(
                           builder: (context) => RoutineInProgressScreen(
                             routineId: widget.routineId,
-                            title: data['title'] ?? widget.title,
+                            title: title,
                           ),
                         ),
                       );
@@ -311,32 +235,197 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title, Color color) {
-    return Text(
-      title,
-      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color),
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      centerTitle: false,
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 10),
+        child: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.edit_outlined, color: Colors.black),
+          onPressed: _showMoreOptions,
+        ),
+        const SizedBox(width: 10),
+      ],
     );
   }
 
-  Widget _buildInfoRow(
-    String label,
-    String value,
-    Color textColor,
-    Color mutedColor,
-  ) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: TextStyle(color: mutedColor, fontSize: 15)),
-        Text(
-          value,
-          style: TextStyle(
-            color: textColor,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
+  Widget _buildVisualSection() {
+    return SizedBox(
+      height: 350,
+      child: Center(
+        child: Container(
+          width: 291,
+          height: 253,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5F5F5), // Light grey placeholder
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.image_not_supported_outlined,
+                  size: 40,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '이미지 준비중',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+              ],
+            ),
           ),
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildSolutionCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          Text(
+            '공간 변경 루틴 솔루션',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF171717),
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            '더욱 원활한 운동을 위해 침대 앞 협탁을 책상 쪽으로 치우고, 요가 매트를 깔아 보세요.',
+            style: TextStyle(
+              fontSize: 15,
+              height: 1.5,
+              color: Color.fromRGBO(0, 0, 0, 0.6),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimeCard(String start, String end, String days) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE5E5E5)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '루틴 지속 시간',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              Row(
+                children: [
+                  _buildTimeBox(start),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8.0),
+                    child: Text(
+                      '~',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  _buildTimeBox(end),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: Color(0xFFF0F0F0)),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '반복',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                child: Text(
+                  days,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF3C3C3C),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimeBox(String time) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F8F8),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        time.isEmpty ? '--:--' : time,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Colors.black,
+        ),
+      ),
     );
   }
 
@@ -374,7 +463,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                     ),
                   ).then((updated) {
                     if (updated == true) {
-                      _loadRoutine(); // Reload data
+                      _loadRoutine();
                     }
                   });
                 },
