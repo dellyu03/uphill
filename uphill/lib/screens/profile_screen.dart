@@ -15,6 +15,7 @@ class ProfileScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: colors.bgMain,
       appBar: AppBar(
+        surfaceTintColor: Colors.transparent,
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -126,6 +127,7 @@ class ProfileScreen extends StatelessWidget {
                 },
               ),
             ]),
+            const SizedBox(height: 90),
           ],
         ),
       ),

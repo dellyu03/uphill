@@ -14,21 +14,21 @@ class DummyAuthService {
     'user1@test.com': {
       'uid': 'dummy_uid_001',
       'email': 'user1@test.com',
-      'name': '김철수',
+      'name': '업힐김',
       'isNewUser': false,
       'onboardingCompleted': true,
     },
     'user2@test.com': {
       'uid': 'dummy_uid_002',
       'email': 'user2@test.com',
-      'name': '이영희',
+      'name': 'KimUphill',
       'isNewUser': false,
       'onboardingCompleted': true,
     },
     'newuser@test.com': {
       'uid': 'dummy_uid_003',
       'email': 'newuser@test.com',
-      'name': '신규사용자',
+      'name': '김업힐',
       'isNewUser': true,
       'onboardingCompleted': false,
     },
@@ -74,7 +74,7 @@ class DummyAuthService {
         _currentUserInfo = {
           'uid': _currentUid,
           'email': email,
-          'name': '신규 사용자',
+          'name': '김업힐',
           'isNewUser': true,
           'onboardingCompleted': false,
         };
