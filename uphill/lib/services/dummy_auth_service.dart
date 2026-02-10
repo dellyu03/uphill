@@ -145,6 +145,26 @@ class DummyAuthService {
     }
   }
 
+  /// 프로필 업데이트
+  Future<void> updateProfile({String? name, String? picture}) async {
+    if (_currentUserInfo != null) {
+      if (name != null) _currentUserInfo!['name'] = name;
+      if (picture != null) _currentUserInfo!['picture'] = picture;
+
+      // 더미 DB 업데이트
+      final email = _currentUserInfo!['email'];
+      if (email != null && _dummyUsers.containsKey(email)) {
+        _dummyUsers[email] = Map<String, dynamic>.from(_currentUserInfo!);
+      }
+
+      await _saveAuthData();
+
+      debugPrint('✅ 프로필 업데이트 완료');
+      if (name != null) debugPrint('   - 이름: $name');
+      if (picture != null) debugPrint('   - 사진: $picture');
+    }
+  }
+
   /// 로그아웃
   Future<void> signOut() async {
     _currentUid = null;

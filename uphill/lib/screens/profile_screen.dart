@@ -2,10 +2,16 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/dummy_auth_service.dart';
 import 'onboarding/login_screen.dart';
+import 'profile_edit_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<UphillColors>()!;
@@ -18,22 +24,13 @@ class ProfileScreen extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
         title: const Text(
           '마이페이지',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings, color: Colors.black),
-            onPressed: () {},
-          ),
-        ],
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -94,7 +91,20 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 48),
             _buildSection('내 정보', [
-              _buildListTile(Icons.person_outline, '프로필 수정'),
+              _buildListTile(
+                Icons.person_outline,
+                '프로필 수정',
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ProfileEditScreen(),
+                    ),
+                  );
+                  // Refresh the profile info after returning
+                  setState(() {});
+                },
+              ),
               _buildListTile(Icons.lock_outline, '비밀번호 변경'),
             ]),
             const SizedBox(height: 24),
