@@ -25,7 +25,7 @@ class RoutineBadge extends StatelessWidget {
         vertical: isCompact ? 2 : 4,
       ),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.4),
+        color: const Color(0xFF98A340).withOpacity(0.7),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(

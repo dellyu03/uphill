@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../theme/app_theme.dart';
 
 class DateStrip extends StatelessWidget {
   final DateTime selectedDate;
@@ -23,7 +24,7 @@ class DateStrip extends StatelessWidget {
     });
 
     return SizedBox(
-      height: 85, // Figma Height adjusted
+      height: 70, // Figma height approx (66px + padding)
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(
           horizontal: 24,
@@ -60,18 +61,17 @@ class _DateItem extends StatelessWidget {
     // Selected: Background almost black/dark grey, Text White
     // Unselected: Transparent, Text Grey
 
+    final colors = Theme.of(context).extension<UphillColors>()!;
     final dayStr = DateFormat('d').format(date);
-    final weekStr = DateFormat('E').format(date).toUpperCase();
+    final weekStr = DateFormat('E', 'en_US').format(date).toUpperCase();
 
     return Container(
-      width: 54, // Figma width approx
+      width: 52, // Figma width
       margin: const EdgeInsets.symmetric(
         vertical: 4,
       ), // Margin for shadow if needed
       decoration: BoxDecoration(
-        color: isSelected
-            ? const Color(0xFF434343)
-            : Colors.transparent, // Dark grey for selected
+        color: isSelected ? colors.dateSelectedBg : Colors.transparent,
         borderRadius: BorderRadius.circular(20),
         border: isSelected ? null : Border.all(color: Colors.transparent),
       ),
@@ -84,7 +84,9 @@ class _DateItem extends StatelessWidget {
             style: GoogleFonts.montserrat(
               fontSize: 20,
               fontWeight: FontWeight.w600,
-              color: isSelected ? Colors.white : const Color(0xFFC6C5C3),
+              color: isSelected
+                  ? const Color(0xFF504D4D)
+                  : const Color(0xFFC6C5C3),
             ),
           ),
           const SizedBox(height: 2),
@@ -94,7 +96,9 @@ class _DateItem extends StatelessWidget {
             style: GoogleFonts.montserrat(
               fontSize: 10,
               fontWeight: FontWeight.w500,
-              color: isSelected ? Colors.white : const Color(0xFFC6C5C3),
+              color: isSelected
+                  ? const Color(0xFF424242)
+                  : const Color(0xFFC6C5C3),
             ),
           ),
         ],

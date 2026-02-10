@@ -142,7 +142,7 @@ class UphillColors extends ThemeExtension<UphillColors> {
     routinePinned: Color(0xFFDAD9D4), // Grey
     textEmphasis: Colors.black,
     textMuted: Colors.black54,
-    dateSelectedBg: Color(0xFFDAD9D4), // Slightly darker for capsule
+    dateSelectedBg: Color(0xFFD6DABA), // Beige Green from Figma
     timeHighlight: Color(0xFF98A340), // Olive Green
     // Feedback Screen Colors
     feedbackCardWeekBg: Color(0xFFD9D9D9),

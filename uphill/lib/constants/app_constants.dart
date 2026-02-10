@@ -34,7 +34,7 @@ class LayoutConstants {
   LayoutConstants._();
 
   /// 타임라인 시간당 높이 (px)
-  static const double hourHeight = 110.0;
+  static const double hourHeight = 150.0;
 
   /// 타임라인 시작 시간
   static const int startHour = 0;
@@ -72,15 +72,7 @@ class RoutineConstants {
   static const int defaultDurationMinutes = 30;
 
   /// 요일 인덱스 (0=월, 1=화, ..., 6=일)
-  static const List<String> weekdayNames = [
-    '월',
-    '화',
-    '수',
-    '목',
-    '금',
-    '토',
-    '일',
-  ];
+  static const List<String> weekdayNames = ['월', '화', '수', '목', '금', '토', '일'];
 }
 
 /// 텍스트 상수
