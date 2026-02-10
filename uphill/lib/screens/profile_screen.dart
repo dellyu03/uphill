@@ -109,8 +109,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ]),
             const SizedBox(height: 24),
             _buildSection('활동', [
-              _buildListTile(Icons.bar_chart, '이용 약관'),
-              _buildListTile(Icons.workspace_premium, '개인정보 처리방침'),
+              _buildListTile(Icons.info_outline, '이용 약관'),
+              _buildListTile(Icons.info_outline, '개인정보 처리방침'),
             ]),
             const SizedBox(height: 24),
             _buildSection('지원', [
