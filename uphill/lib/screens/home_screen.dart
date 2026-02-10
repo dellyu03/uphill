@@ -8,9 +8,11 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../widgets/date_strip.dart';
 import '../widgets/routine_card.dart';
+import '../widgets/progress_banner.dart';
 import '../constants/app_constants.dart';
 import 'routine_flow/routine_step1_screen.dart';
 import 'routine_detail_screen.dart';
+import 'routine_in_progress_screen.dart';
 import '../services/routine_service.dart';
 import '../services/auth_service.dart';
 import '../services/dummy_auth_service.dart';
@@ -169,6 +171,26 @@ class HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
+  /// 현재 진행 중인 루틴 찾기
+  /// 현재 시간이 루틴의 시작~종료 시간 사이이면 진행 중으로 판단
+  Map<String, dynamic>? _getActiveRoutine() {
+    final now = DateTime.now();
+    final todayRoutines = _getRoutinesForDate(now);
+    final nowTotalMins = now.hour * 60 + now.minute;
+
+    for (var routine in todayRoutines) {
+      final start = _parseTime(routine['start'] as String);
+      final end = _parseTime(routine['end'] as String);
+      final startMins = start.hour * 60 + start.minute;
+      final endMins = end.hour * 60 + end.minute;
+
+      if (nowTotalMins >= startMins && nowTotalMins < endMins) {
+        return routine;
+      }
+    }
+    return null;
+  }
+
   /// 현재 시간대로 스크롤
   /// 외부에서 호출 가능 (MainScaffold에서 홈탭 재탭 시)
   void scrollToCurrentTime() {
@@ -219,6 +241,8 @@ class HomeScreenState extends State<HomeScreen> {
             _buildCustomAppBar(),
             // 날짜 선택 스트립
             _buildDateStrip(),
+            // 진행 중인 루틴 배너
+            _buildProgressBanner(),
             const SizedBox(height: 20),
             // 타임라인 영역
             Expanded(child: RepaintBoundary(child: _buildTimeline())),
@@ -264,11 +288,37 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// 진행 중인 루틴 배너 위젯
+  Widget _buildProgressBanner() {
+    if (_isLoading) return const SizedBox.shrink();
+
+    final activeRoutine = _getActiveRoutine();
+    if (activeRoutine == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: ProgressBanner(
+        routineTitle: activeRoutine['title'] as String,
+        onPlayTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => RoutineInProgressScreen(
+                routineId: activeRoutine['id'].toString(),
+                title: activeRoutine['title'] as String,
+              ),
+            ),
+          ).then((_) => _loadRoutines());
+        },
+      ),
+    );
+  }
+
   /// 루틴 추가 FAB 위젯
   Widget _buildAddRoutineFab() {
     return FloatingActionButton(
       onPressed: _onAddRoutinePressed,
-      backgroundColor: const Color(0xFF1C1C1E), // Almost black
+      backgroundColor: const Color(0xFF484848), // Figma #484848
       elevation: 4,
       shape: const CircleBorder(),
       child: const Icon(Icons.add, color: Colors.white, size: 28),
@@ -359,8 +409,10 @@ class HomeScreenState extends State<HomeScreen> {
             // 시간 라벨 텍스트
             child: Text(
               '${i.toString().padLeft(2, '0')}:00',
-              style: TextStyle(
-                color: i == now.hour ? colors.timeHighlight : Colors.black38,
+              style: GoogleFonts.montserrat(
+                color: i == now.hour
+                    ? colors.timeHighlight
+                    : const Color.fromRGBO(0, 0, 0, 0.2), // Figma 20% opacity
                 fontSize: 13,
                 fontWeight: i == now.hour ? FontWeight.bold : FontWeight.w500,
               ),
