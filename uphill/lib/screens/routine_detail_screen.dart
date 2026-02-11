@@ -76,7 +76,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '진행 중인 루틴',
+                            '루틴 상세',
                             style: TextStyle(
                               fontSize: 18,
                               color: Colors.black.withValues(alpha: 0.6),
@@ -237,6 +237,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
+      surfaceTintColor: Colors.transparent,
       backgroundColor: Colors.transparent,
       elevation: 0,
       centerTitle: false,
