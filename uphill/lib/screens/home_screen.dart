@@ -129,14 +129,22 @@ class HomeScreenState extends State<HomeScreen> {
   ) {
     return routines.map((routine) {
       final time = routine['time'] as String;
-      final timeParts = time.split(':');
-      final hour = int.parse(timeParts[0]);
-      final minute = int.parse(timeParts[1]);
 
-      // 기본 30분 간격으로 종료 시간 계산
-      final endMinute = minute + RoutineConstants.defaultDurationMinutes;
-      final endHour = endMinute >= 60 ? hour + 1 : hour;
-      final endMin = endMinute >= 60 ? endMinute - 60 : endMinute;
+      // end_time이 있으면 사용, 없으면 기본 30분 후로 계산
+      String endTime;
+      if (routine['end_time'] != null && routine['end_time'] != '') {
+        endTime = routine['end_time'] as String;
+      } else {
+        // 기본 30분 간격으로 종료 시간 계산
+        final timeParts = time.split(':');
+        final hour = int.parse(timeParts[0]);
+        final minute = int.parse(timeParts[1]);
+        final endMinute = minute + RoutineConstants.defaultDurationMinutes;
+        final endHour = endMinute >= 60 ? hour + 1 : hour;
+        final endMin = endMinute >= 60 ? endMinute - 60 : endMinute;
+        endTime =
+            '${endHour.toString().padLeft(2, '0')}:${endMin.toString().padLeft(2, '0')}';
+      }
 
       // days가 null이면 빈 리스트로 처리
       final days = routine['days'] != null
@@ -147,13 +155,12 @@ class HomeScreenState extends State<HomeScreen> {
         'id': routine['id'],
         'title': routine['title'],
         'start': time,
-        'end':
-            '${endHour.toString().padLeft(2, '0')}:${endMin.toString().padLeft(2, '0')}',
+        'end': endTime,
         'category': routine['category'],
         'color': routine['color'],
         'days': days,
-        'isUpdated': false,
-        'isPinned': false,
+        'isUpdated': routine['isUpdated'] ?? false,
+        'isPinned': routine['isPinned'] ?? false,
       };
     }).toList();
   }
@@ -487,12 +494,18 @@ class HomeScreenState extends State<HomeScreen> {
       final durationMinutes =
           (end.hour * 60 + end.minute) - (start.hour * 60 + start.minute);
 
+      // 계산된 높이 (시간 기반)
+      final calculatedHeight =
+          (durationMinutes / 60) * LayoutConstants.hourHeight - 8;
+      // 최소 높이 65px: 타이틀(15px) + 간격(4px) + 시간(11px) + 패딩(24px) + 여유(11px)
+      final cardHeight = calculatedHeight < 65 ? 65.0 : calculatedHeight;
+
       // 루틴 카드 위치 및 크기
       return Positioned(
         top: (startMinutes / 60) * LayoutConstants.hourHeight,
         left: LayoutConstants.timelineLeftMargin + (layout['offset'] ?? 0.0),
         width: layout['width'] ?? defaultWidth,
-        height: (durationMinutes / 60) * LayoutConstants.hourHeight - 8,
+        height: cardHeight,
         // 루틴 카드 위젯
         child: RoutineCard(
           title: routine['title'],

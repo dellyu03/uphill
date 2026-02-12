@@ -1,4 +1,6 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 enum RoutineBadgeType { update, pinned }
 
@@ -11,10 +13,13 @@ class RoutineBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (type == RoutineBadgeType.pinned) {
-      return Icon(
-        Icons.push_pin,
-        color: Colors.black54,
-        size: isCompact ? 16 : 20,
+      return Transform.rotate(
+        angle: 41.11 * pi / 180, // 41.11 degrees in radians
+        child: Icon(
+          Icons.push_pin,
+          color: const Color(0xFF8E8E93),
+          size: isCompact ? 16 : 20,
+        ),
       );
     }
 
@@ -25,15 +30,15 @@ class RoutineBadge extends StatelessWidget {
         vertical: isCompact ? 2 : 4,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFF98A340).withOpacity(0.7),
-        borderRadius: BorderRadius.circular(12),
+        color: const Color(0xFFB9BD9D),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         'Update',
-        style: TextStyle(
-          fontSize: isCompact ? 10 : 11,
-          fontWeight: FontWeight.w500,
-          color: Colors.white,
+        style: GoogleFonts.notoSansKr(
+          fontSize: 11,
+          fontWeight: FontWeight.w400,
+          color: const Color.fromRGBO(255, 255, 255, 0.9),
         ),
       ),
     );
