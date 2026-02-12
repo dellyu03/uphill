@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class UphillColors extends ThemeExtension<UphillColors> {
   final Color bgMain;
@@ -154,4 +155,95 @@ class UphillColors extends ThemeExtension<UphillColors> {
     feedbackBadgeNewBg: Color(0xFFB9C292),
     feedbackBadgeNewText: Color(0xFFFFFFFF),
   );
+}
+
+class UphillTheme {
+  static ThemeData get lightTheme {
+    return ThemeData(
+      useMaterial3: true,
+      textTheme: GoogleFonts.montserratTextTheme(),
+      // Change seed color from deepPurple to something neutral or brand-aligned
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFF333333),
+        primary: const Color(0xFF333333),
+        secondary: const Color(0xFF333333),
+        surface: const Color(0xFFF6F6F6),
+        outline: const Color(0xFFD3D3D3),
+      ),
+      scaffoldBackgroundColor: const Color(0xFFF6F6F6),
+
+      // Text Selection Theme (Cursor, Selection Handle)
+      textSelectionTheme: const TextSelectionThemeData(
+        cursorColor: Color(0xFF333333),
+        selectionColor: Color(0x33333333),
+        selectionHandleColor: Color(0xFF333333),
+      ),
+
+      // Input Decoration Theme (TextFields)
+      inputDecorationTheme: InputDecorationTheme(
+        activeIndicatorBorder: const BorderSide(color: Color(0xFF333333)),
+        focusedBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Color(0xFF333333)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+
+      // Time Picker Theme
+      timePickerTheme: TimePickerThemeData(
+        backgroundColor: Colors.white,
+        hourMinuteTextColor: const Color(0xFF333333),
+        hourMinuteColor: const Color(0xFFF4F4F4),
+        dialHandColor: const Color(0xFF333333),
+        dialBackgroundColor: const Color(0xFFF4F4F4),
+        dayPeriodTextColor: const Color(0xFF333333),
+        dayPeriodColor: const Color(0xFFF4F4F4), // Am/Pm selector background
+        dayPeriodBorderSide: const BorderSide(color: Color(0xFFD3D3D3)),
+        confirmButtonStyle: ButtonStyle(
+          foregroundColor: WidgetStateProperty.all(const Color(0xFF333333)),
+        ),
+        cancelButtonStyle: ButtonStyle(
+          foregroundColor: WidgetStateProperty.all(const Color(0xFF666666)),
+        ),
+      ),
+
+      // Checkbox Theme
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const Color(0xFF333333);
+          }
+          return null;
+        }),
+      ),
+
+      // Radio Theme
+      radioTheme: RadioThemeData(
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const Color(0xFF333333);
+          }
+          return null;
+        }),
+      ),
+
+      // Switch Theme
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const Color(0xFF333333);
+          }
+          return null;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const Color(0xFF333333).withValues(alpha: 0.5);
+          }
+          return null;
+        }),
+      ),
+
+      // Extensions
+      extensions: const <ThemeExtension<dynamic>>[UphillColors.light],
+    );
+  }
 }

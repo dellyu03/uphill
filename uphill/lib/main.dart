@@ -4,7 +4,6 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'firebase_options.dart';
 import 'screens/onboarding/login_screen.dart';
@@ -35,12 +34,7 @@ class MyApp extends StatelessWidget {
       title: AppConstants.appTitle,
       debugShowCheckedModeBanner: false,
       // 앱 테마 설정
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-        textTheme: GoogleFonts.montserratTextTheme(),
-        extensions: const <ThemeExtension<dynamic>>[UphillColors.light],
-      ),
+      theme: UphillTheme.lightTheme,
       // 메인 화면
       home: const LoginScreen(),
       // 라우트 설정
