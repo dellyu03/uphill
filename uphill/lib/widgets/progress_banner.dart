@@ -19,65 +19,65 @@ class ProgressBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20), // Figma rounded-[20px]
-          boxShadow: [
-            BoxShadow(
-              color: const Color.fromRGBO(0, 0, 0, 0.05),
-              blurRadius: 6,
-              offset: const Offset(0, 0),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // 체크 아이콘
-            // Figma imgVector840, small size around 10-12px
-            const Icon(Icons.check, color: Color(0xFF7B8A2E), size: 14),
-            const SizedBox(width: 10),
-            // "현재 {루틴이름} 진행 중.." 텍스트
-            Expanded(
-              child: Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: '현재 ',
-                      style: GoogleFonts.notoSansKr(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF8C8C8C),
-                      ),
-                    ),
-                    TextSpan(
-                      text: routineTitle,
-                      style: GoogleFonts.notoSansKr(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF98A340),
-                      ),
-                    ),
-                    TextSpan(
-                      text: ' 진행 중..',
-                      style: GoogleFonts.notoSansKr(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF8C8C8C),
-                      ),
-                    ),
-                  ],
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
+      child: GestureDetector(
+        onTap: onPlayTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20), // Figma rounded-[20px]
+            boxShadow: [
+              BoxShadow(
+                color: const Color.fromRGBO(0, 0, 0, 0.05),
+                blurRadius: 6,
+                offset: const Offset(0, 0),
               ),
-            ),
-            const SizedBox(width: 10),
-            // 재생 버튼
-            GestureDetector(
-              onTap: onPlayTap,
-              child: Container(
+            ],
+          ),
+          child: Row(
+            children: [
+              // 체크 아이콘
+              // Figma imgVector840, small size around 10-12px
+              const Icon(Icons.check, color: Color(0xFF7B8A2E), size: 14),
+              const SizedBox(width: 10),
+              // "현재 {루틴이름} 진행 중.." 텍스트
+              Expanded(
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: '현재 ',
+                        style: GoogleFonts.notoSansKr(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF8C8C8C),
+                        ),
+                      ),
+                      TextSpan(
+                        text: routineTitle,
+                        style: GoogleFonts.notoSansKr(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF98A340),
+                        ),
+                      ),
+                      TextSpan(
+                        text: ' 진행 중..',
+                        style: GoogleFonts.notoSansKr(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF8C8C8C),
+                        ),
+                      ),
+                    ],
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
+              const SizedBox(width: 10),
+              // 재생 버튼
+              Container(
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
@@ -90,8 +90,8 @@ class ProgressBanner extends StatelessWidget {
                   size: 24,
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

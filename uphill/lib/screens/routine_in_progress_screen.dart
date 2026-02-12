@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/routine_service.dart';
@@ -21,14 +22,32 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
   final RoutineService _routineService = RoutineService();
   late Future<Map<String, dynamic>> _routineFuture;
 
-  // 0: 공간 (Space), 1: 물품 (Item)
-  int _selectedTab = 0;
+  // Timer State
+  Timer? _timer;
+
   bool _isCompleting = false;
 
   @override
   void initState() {
     super.initState();
     _routineFuture = _routineService.getRoutine(widget.routineId);
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          // Trigger rebuild to update elapsed time display
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   Future<void> _handleComplete() async {
@@ -37,20 +56,37 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
     setState(() => _isCompleting = true);
 
     try {
-      // 완료 처리 (기존 로직 재사용, 시간은 0 또는 임의값)
+      // Fetch data to calculate duration from scheduled time
+      final data = await _routineFuture;
+      final timeStr = data['time'] as String? ?? '00:00';
+      final now = DateTime.now();
+      final parts = timeStr.split(':');
+      final hour = int.parse(parts[0]);
+      final minute = int.parse(parts[1]);
+
+      // Calculate Scheduled Start Time for Today
+      final routineStartTime = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        hour,
+        minute,
+      );
+      final duration = now.difference(routineStartTime);
+
       await _routineService.createExecution(
         routineId: widget.routineId,
         routineTitle: widget.title,
-        startedAt: DateTime.now(),
-        endedAt: DateTime.now(),
-        durationSeconds: 0,
+        startedAt: routineStartTime,
+        endedAt: now,
+        durationSeconds: duration.inSeconds,
       );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('루틴이 완료되었습니다!'),
-            backgroundColor: Colors.green,
+            backgroundColor: Color(0xFF4E4E4E),
           ),
         );
         Navigator.pop(context, true);
@@ -66,27 +102,31 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
     }
   }
 
+  // Helper to get Space Image
+  String _getSpaceImage(String space) {
+    // User requested specific floor plan image.
+    // The user stated they would provide the image, so we expect 'assets/images/floor_plan.png' to exist.
+    return 'assets/images/floor_plan.png';
+  }
+
+  // Helper to get Solution Text
+  String _getSpaceSolution(String space) {
+    if (space.contains('침대') || space.contains('방')) {
+      return '더욱 원활한 기상을 위해 침대 앞 협탁을 정리하고, 스트레칭 공간을 확보해보세요.';
+    } else if (space.contains('책상') || space.contains('서재')) {
+      return '집중력을 높이기 위해 책상 위 불필요한 물건을 정리하고 시작해보세요.';
+    } else if (space.contains('거실')) {
+      return '편안한 마음가짐을 위해 조도를 낮추고 소음 요소를 차단해보세요.';
+    } else if (space.contains('주방') || space.contains('부엌')) {
+      return '건강한 하루를 위해 미지근한 물 한 잔을 먼저 준비해보세요.';
+    }
+    return '더욱 원활한 루틴 진행을 위해 주변 환경을 정돈하고, 방해 요소를 제거해보세요.';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F6F6),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          '루틴 진행',
-          style: GoogleFonts.notoSansKr(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        centerTitle: true,
-      ),
+      backgroundColor: const Color(0xFFEEEEEC), // Figma bg color
       body: FutureBuilder<Map<String, dynamic>>(
         future: _routineFuture,
         builder: (context, snapshot) {
@@ -94,206 +134,293 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return Center(child: Text('오류 발생: ${snapshot.error}'));
-          } else if (!snapshot.hasData) {
-            return const Center(child: Text('루틴 정보를 찾을 수 없습니다.'));
           }
 
-          final data = snapshot.data!;
+          final data = snapshot.data ?? {};
           final title = data['title'] ?? widget.title;
-          final startTime = data['time'] ?? '00:00';
-          final endTime = data['end_time'] ?? '00:00';
-          // 만약 end_time이 없다면 기본 로직대로 +30분 등 처리 가능하나,
-          // 여기서는 서버/저장된 데이터 우선.
+          final space = data['space'] ?? '공간';
 
-          final isFlexible =
-              data['is_flexible'] ==
-              true; // bool or String check needed based on API
-          // API might return 'true' string or boolean. Safe check:
-          // In previous code it was passed as boolean to createRoutine. Assuming dynamic map.
+          final solutionText = _getSpaceSolution(space);
+          final spaceImage = _getSpaceImage(space);
 
-          final days = List<int>.from(data['days'] ?? []);
-          final space = data['space'] ?? '설정되지 않음';
-          final iotDevices = data['iot_devices'] as List<dynamic>? ?? [];
-
-          return Column(
+          return Stack(
             children: [
-              Expanded(
+              // Scrollable Content
+              Positioned.fill(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 24),
-                      // 1. Title & Time
-                      Center(
+                      const SizedBox(height: 60), // Top padding
+                      // Header Section
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // Badge: "현재 루틴"
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFD8E29C),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                '현재 루틴',
+                                style: GoogleFonts.notoSansKr(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            // Subtitle: "진행 중인 루틴"
+                            Text(
+                              '진행 중인 루틴',
+                              style: GoogleFonts.notoSansKr(
+                                fontSize: 18,
+                                color: const Color(
+                                  0x66555151,
+                                ), // approx 0.4 opacity
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            // Title: Routine Name
                             Text(
                               title,
                               style: GoogleFonts.notoSansKr(
-                                fontSize: 24,
+                                fontSize: 29,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              _formatTimeRange(startTime, endTime),
-                              style: GoogleFonts.notoSansKr(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: const Color(0xFF666666),
+                                color: const Color(0xFF555151),
+                                height: 1.4,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 24),
 
-                      // 2. Badges
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _buildBadge(
-                            isFlexible ? '변동가능' : '고정',
-                            const Color(0xFFE0E0E0),
-                            Colors.black,
-                          ),
-                          const SizedBox(width: 8),
-                          _buildBadge(
-                            _formatDays(days),
-                            const Color(0xFFFFF4E5),
-                            const Color(0xFFFF9500),
-                          ),
-                        ],
-                      ),
                       const SizedBox(height: 40),
 
-                      // 3. Toggle Switch (Space / Item)
-                      Container(
-                        width: double.infinity,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE0E0E0),
-                          borderRadius: BorderRadius.circular(24),
+                      // 1. Space Image (Dynamic based on space)
+                      Center(
+                        child: Container(
+                          width: 336,
+                          height: 293,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(
+                              30,
+                            ), // Soft rounded corners
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(30),
+                            child: Image.asset(
+                              spaceImage,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                // Fallback if image not found
+                                return Image.asset(
+                                  'assets/images/google_icon.png', // Temporary safe fallback or simply a colored box
+                                  fit: BoxFit.cover,
+                                );
+                              },
+                            ),
+                          ),
                         ),
-                        child: Stack(
-                          children: [
-                            AnimatedAlign(
-                              duration: const Duration(milliseconds: 200),
-                              alignment: _selectedTab == 0
-                                  ? Alignment.centerLeft
-                                  : Alignment.centerRight,
-                              child: Container(
-                                width:
-                                    MediaQuery.of(context).size.width / 2 -
-                                    24, // Half width approximation
-                                margin: const EdgeInsets.all(2),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(22),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 2,
-                                      offset: const Offset(0, 1),
-                                    ),
-                                  ],
+                      ),
+
+                      const SizedBox(height: 40),
+
+                      // 2. Solution Card (Dynamic text)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 26,
+                            vertical: 24,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8F8F8),
+                            borderRadius: BorderRadius.circular(22),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '$space 루틴 솔루션', // Adapting title
+                                style: GoogleFonts.notoSansKr(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xE6515151), // 0.9 opacity
                                 ),
                               ),
+                              const SizedBox(height: 10),
+                              Text(
+                                solutionText, // Providing actionable text based on space
+                                style: GoogleFonts.notoSansKr(
+                                  fontSize: 14,
+                                  color: const Color(0x99515151), // 0.6 opacity
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 40),
+
+                      // Bottom Section
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '시작 시간',
+                              style: GoogleFonts.notoSansKr(
+                                fontSize: 18,
+                                color: const Color(0x99000000),
+                              ),
                             ),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: GestureDetector(
-                                    onTap: () =>
-                                        setState(() => _selectedTab = 0),
-                                    behavior: HitTestBehavior.translucent,
-                                    child: Center(
-                                      child: Text(
-                                        '공간',
-                                        style: GoogleFonts.notoSansKr(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                          color: _selectedTab == 0
-                                              ? Colors.black
-                                              : const Color(0xFF8E8E93),
+                            const SizedBox(height: 4),
+                            Builder(
+                              builder: (context) {
+                                // Parse Start Time from 'time' field (e.g. "07:00")
+                                final timeStr =
+                                    data['time'] as String? ?? '00:00';
+                                final now = DateTime.now();
+                                final parts = timeStr.split(':');
+                                final hour = int.parse(parts[0]);
+                                final minute = int.parse(parts[1]);
+
+                                // Create DateTime for Today at Routine Time
+                                final routineStartTime = DateTime(
+                                  now.year,
+                                  now.month,
+                                  now.day,
+                                  hour,
+                                  minute,
+                                );
+                                final elapsed = now.difference(
+                                  routineStartTime,
+                                );
+
+                                return Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        // Start Time (Black)
+                                        Text(
+                                          _formatDateTime(routineStartTime),
+                                          style: GoogleFonts.inter(
+                                            fontSize: 30,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors
+                                                .black, // Explicitly Black
+                                          ),
                                         ),
+                                        // Elapsed Time (Red)
+                                        Text(
+                                          '+${(elapsed.inMinutes).toString()}m',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 18,
+                                            color: const Color(0xFFFF6E6E),
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    GestureDetector(
+                                      onTap: _isCompleting
+                                          ? null
+                                          : _handleComplete,
+                                      child: Container(
+                                        width: 81,
+                                        height: 46,
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF4E4E4E),
+                                          borderRadius: BorderRadius.circular(
+                                            23,
+                                          ),
+                                        ),
+                                        child: _isCompleting
+                                            ? const SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      color: Colors.white,
+                                                      strokeWidth: 2,
+                                                    ),
+                                              )
+                                            : Text(
+                                                '완료',
+                                                style: GoogleFonts.notoSansKr(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
                                       ),
                                     ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: GestureDetector(
-                                    onTap: () =>
-                                        setState(() => _selectedTab = 1),
-                                    behavior: HitTestBehavior.translucent,
-                                    child: Center(
-                                      child: Text(
-                                        '물품',
-                                        style: GoogleFonts.notoSansKr(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                          color: _selectedTab == 1
-                                              ? Colors.black
-                                              : const Color(0xFF8E8E93),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                                  ],
+                                );
+                              },
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 32),
-
-                      // 4. Content Area
-                      if (_selectedTab == 0)
-                        _buildSpaceContent(space)
-                      else
-                        _buildItemContent(iotDevices),
+                      const SizedBox(height: 40),
                     ],
                   ),
                 ),
               ),
 
-              // Bottom Button
-              Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: _isCompleting ? null : _handleComplete,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF333333),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(28),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: _isCompleting
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : Text(
-                            '루틴 완료',
-                            style: GoogleFonts.notoSansKr(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+              // Back Button (Floating)
+              Positioned(
+                top: 50,
+                left: 20,
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Icon(Icons.arrow_back_ios, color: Colors.black54),
                   ),
                 ),
               ),
+
+              // Timeline Visual Decoration (Check Box)
+              // Positioning this absolutely as per Figma might be tricky on different screens via Stack/Positioned logic
+              // within a ScrollView. For now, omitting the complex dashed box overlay or finding a better place for it.
+              // To fully match Figma, one would need exact coordinates relative to the screen.
+              // Given this is a scrolling view, we can place it relative to the solution card if needed.
+              // I will add a simplified visual anchor near the bottom section if appropriate.
             ],
           );
         },
@@ -301,142 +428,11 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
     );
   }
 
-  Widget _buildBadge(String text, Color bgColor, Color textColor) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Text(
-        text,
-        style: GoogleFonts.notoSansKr(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: textColor,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSpaceContent(String space) {
-    return Center(
-      child: Column(
-        children: [
-          const SizedBox(height: 20),
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFE0E0E0)),
-            ),
-            child: const Icon(
-              Icons.meeting_room,
-              size: 48,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            space,
-            style: GoogleFonts.notoSansKr(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '이 공간에서 루틴을 진행해주세요.',
-            style: GoogleFonts.notoSansKr(
-              fontSize: 14,
-              color: const Color(0xFF8E8E93),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildItemContent(List<dynamic> devices) {
-    if (devices.isEmpty) {
-      return Center(
-        child: Column(
-          children: [
-            const SizedBox(height: 40),
-            Text(
-              '연동된 물품이 없습니다.',
-              style: GoogleFonts.notoSansKr(
-                fontSize: 16,
-                color: const Color(0xFF8E8E93),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    return Column(
-      children: devices.map((device) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE0E0E0)),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.devices_other, color: Colors.black),
-              const SizedBox(width: 12),
-              Text(
-                device.toString(), // Assuming device name or map
-                style: GoogleFonts.notoSansKr(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  String _formatTimeRange(String start, String end) {
-    // start, end format: "HH:mm"
-    // Convert to "오후/오전 HH:mm"
-    // This is a simple formatter
-    try {
-      final s = _parseTime(start);
-      final e = _parseTime(end);
-      return '${_formatTimeOfDay(s)} - ${_formatTimeOfDay(e)}';
-    } catch (_) {
-      return '$start - $end';
-    }
-  }
-
-  TimeOfDay _parseTime(String time) {
-    final parts = time.split(':');
-    return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
-  }
-
-  String _formatTimeOfDay(TimeOfDay time) {
-    final hour = time.hourOfPeriod;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.period == DayPeriod.am ? '오전' : '오후';
-    // 12:00 -> 12:00
-    // 0:00 -> 12:00
-    final displayHour = hour == 0 ? 12 : hour;
-    return '$period $displayHour:$minute';
-  }
-
-  String _formatDays(List<int> days) {
-    if (days.length == 7) return '매일';
-    if (days.isEmpty) return '선택 안함';
-    final weekDays = ['월', '화', '수', '목', '금', '토', '일'];
-    return days.map((d) => weekDays[d]).join(', ');
+  String _formatDateTime(DateTime dateTime) {
+    final hour = dateTime.hour;
+    final minute = dateTime.minute;
+    final period = hour >= 12 ? 'pm' : 'am';
+    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+    return '${displayHour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} $period';
   }
 }
