@@ -470,7 +470,7 @@ class RoutineService {
         'id': '1',
         'title': '모닝 스트레칭',
         'time': '07:00',
-        'end_time': '07:30',
+        'end_time': '08:00',
         'category': '건강', // purpose
         'purpose': '건강',
         'color': '#FF9E9E',
@@ -479,6 +479,8 @@ class RoutineService {
         'description': '편안한 분위기에서 가벼운 스트레칭',
         'is_flexible': true,
         'notification_time': '10분 전',
+        'isPinned': false,
+        'isUpdated': true, // 업데이트 카드 (그라디언트)
         'iot_devices': [
           {'type': '조명', 'brightness': 0.8, 'hasBrightness': true},
           {'type': '커튼', 'brightness': 0.0, 'hasBrightness': false},
@@ -486,9 +488,9 @@ class RoutineService {
       },
       {
         'id': '2',
-        'title': '독서 30분',
+        'title': '독서',
         'time': '20:00',
-        'end_time': '20:30',
+        'end_time': '21:00',
         'category': '자기계발',
         'purpose': '자기계발',
         'color': '#9E9EFF',
@@ -497,6 +499,8 @@ class RoutineService {
         'description': '조용한 분위기에서 독서',
         'is_flexible': false,
         'notification_time': '30분 전',
+        'isPinned': false,
+        'isUpdated': false, // 기본 카드
         'iot_devices': [],
       },
       {
@@ -512,13 +516,15 @@ class RoutineService {
         'description': '',
         'is_flexible': true,
         'notification_time': '5분 전',
+        'isPinned': true, // 핀 카드 (회전된 아이콘)
+        'isUpdated': false,
         'iot_devices': [],
       },
       {
         'id': '4',
         'title': '영어 단어 암기',
         'time': '21:00',
-        'end_time': '21:30',
+        'end_time': '22:00',
         'category': '학습',
         'purpose': '학습',
         'color': '#FFFF9E',
@@ -527,6 +533,8 @@ class RoutineService {
         'description': '집중할 수 있는 환경',
         'is_flexible': false,
         'notification_time': '1시간 전',
+        'isPinned': false,
+        'isUpdated': false, // 기본 카드
         'iot_devices': [],
       },
     ];
