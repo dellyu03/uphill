@@ -187,6 +187,88 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                         ],
                       ),
                     ),
+
+                    const SizedBox(height: 24),
+
+                    // 7. Delete Button
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: OutlinedButton(
+                          onPressed: () async {
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (BuildContext dialogContext) {
+                                return AlertDialog(
+                                  title: const Text('루틴 삭제'),
+                                  content: Text('"$title" 루틴을 삭제하시겠습니까?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(dialogContext, false),
+                                      child: const Text('취소'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(dialogContext, true),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: Colors.red,
+                                      ),
+                                      child: const Text('삭제'),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+
+                            if (confirmed == true && context.mounted) {
+                              try {
+                                await RoutineService().deleteRoutine(
+                                  widget.routineId,
+                                );
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('루틴이 삭제되었습니다'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                  Navigator.pop(context, true);
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('삭제 실패: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            }
+                          },
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(
+                              color: Colors.red,
+                              width: 1.5,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            '루틴 삭제하기',
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -251,7 +333,22 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
       actions: [
         IconButton(
           icon: const Icon(Icons.edit_outlined, color: Colors.black),
-          onPressed: _showMoreOptions,
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => RoutineEditScreen(
+                  routineId: widget.routineId,
+                  title: widget.title,
+                  timeRange: widget.timeRange,
+                ),
+              ),
+            ).then((updated) {
+              if (updated == true) {
+                _loadRoutine();
+              }
+            });
+          },
         ),
         const SizedBox(width: 10),
       ],
@@ -435,98 +532,5 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
     if (days.isEmpty) return '선택 안함';
     final weekDays = ['월', '화', '수', '목', '금', '토', '일'];
     return days.map((d) => weekDays[d]).join(', ');
-  }
-
-  void _showMoreOptions() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (BuildContext context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.edit),
-                title: const Text('수정하기'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => RoutineEditScreen(
-                        routineId: widget.routineId,
-                        title: widget.title,
-                        timeRange: widget.timeRange,
-                      ),
-                    ),
-                  ).then((updated) {
-                    if (updated == true) {
-                      _loadRoutine();
-                    }
-                  });
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text('삭제하기', style: TextStyle(color: Colors.red)),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (BuildContext dialogContext) {
-                      return AlertDialog(
-                        title: const Text('루틴 삭제'),
-                        content: Text('\'${widget.title}\' 루틴을 삭제하시겠습니까?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () =>
-                                Navigator.pop(dialogContext, false),
-                            child: const Text('취소'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(dialogContext, true),
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.red,
-                            ),
-                            child: const Text('삭제'),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-
-                  if (confirmed == true && context.mounted) {
-                    try {
-                      await RoutineService().deleteRoutine(widget.routineId);
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('루틴이 삭제되었습니다'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                        Navigator.pop(context, true);
-                      }
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('삭제 실패: $e'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    }
-                  }
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
   }
 }
