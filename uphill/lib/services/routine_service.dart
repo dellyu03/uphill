@@ -22,6 +22,81 @@ class RoutineService {
   final AuthService _authService = AuthService();
   final DummyAuthService _dummyAuthService = DummyAuthService();
 
+  // ===== In-Memory Dummy Data =====
+  final List<Map<String, dynamic>> _dummyRoutines = [
+    {
+      'id': '1',
+      'title': '모닝 스트레칭',
+      'time': '07:00',
+      'end_time': '08:00',
+      'category': '건강', // purpose
+      'purpose': '건강',
+      'color': '#FF9E9E',
+      'days': [0, 1, 2, 3, 4], // 월~금
+      'space': '방 1',
+      'description': '편안한 분위기에서 가벼운 스트레칭',
+      'is_flexible': true,
+      'notification_time': '10분 전',
+      'isPinned': false,
+      'isUpdated': true, // 업데이트 카드 (그라디언트)
+      'iot_devices': [
+        {'type': '조명', 'brightness': 0.8, 'hasBrightness': true},
+        {'type': '커튼', 'brightness': 0.0, 'hasBrightness': false},
+      ],
+    },
+    {
+      'id': '2',
+      'title': '독서',
+      'time': '20:00',
+      'end_time': '21:00',
+      'category': '자기계발',
+      'purpose': '자기계발',
+      'color': '#9E9EFF',
+      'days': [0, 1, 2, 3, 4, 5, 6],
+      'space': '거실',
+      'description': '조용한 분위기에서 독서',
+      'is_flexible': false,
+      'notification_time': '30분 전',
+      'isPinned': false,
+      'isUpdated': false, // 기본 카드
+      'iot_devices': [],
+    },
+    {
+      'id': '3',
+      'title': '영양제 먹기',
+      'time': '08:00',
+      'end_time': '08:05',
+      'category': '건강',
+      'purpose': '건강',
+      'color': '#9EFF9E',
+      'days': [0, 1, 2, 3, 4, 5, 6],
+      'space': '주방',
+      'description': '',
+      'is_flexible': true,
+      'notification_time': '5분 전',
+      'isPinned': true, // 핀 카드 (회전된 아이콘)
+      'isUpdated': false,
+      'iot_devices': [],
+    },
+    {
+      'id': '4',
+      'title': '영어 단어 암기',
+      'time': '21:00',
+      'end_time': '22:00',
+      'category': '학습',
+      'purpose': '학습',
+      'color': '#FFFF9E',
+      'days': [0, 2, 4],
+      'space': '방 2',
+      'description': '집중할 수 있는 환경',
+      'is_flexible': false,
+      'notification_time': '1시간 전',
+      'isPinned': false,
+      'isUpdated': false, // 기본 카드
+      'iot_devices': [],
+    },
+  ];
+
   // ===== 루틴 CRUD API =====
 
   /// 루틴 목록 조회
@@ -32,7 +107,7 @@ class RoutineService {
     if (_dummyAuthService.isLoggedIn) {
       debugPrint('🔄 [Dummy] 루틴 목록 조회');
       // 더미 데이터 반환
-      return _getDummyRoutines();
+      return _dummyRoutines;
     }
 
     try {
@@ -88,7 +163,7 @@ class RoutineService {
       debugPrint('   - Space: $space');
       debugPrint('   - Devices: ${iotDevices?.length}');
 
-      return {
+      final newRoutine = {
         'id': 'dummy_${DateTime.now().millisecondsSinceEpoch}',
         'title': title,
         'time': time, // Start Time
@@ -102,7 +177,11 @@ class RoutineService {
         'notification_time': notificationTime,
         'end_time': endTime,
         'iot_devices': iotDevices,
+        'isPinned': false,
+        'isUpdated': true,
       };
+      _dummyRoutines.add(newRoutine);
+      return newRoutine;
     }
 
     try {
@@ -169,21 +248,33 @@ class RoutineService {
     // 1. 더미 로그인 확인
     if (_dummyAuthService.isLoggedIn) {
       debugPrint('🔄 [Dummy] 루틴 수정: $routineId');
-      return {
-        'id': routineId,
-        'title': title ?? '수정된 루틴',
-        'time': time ?? '09:00',
-        'category': category ?? '건강',
-        'color': color ?? '#9CAA7D',
-        'days': days ?? [],
-        'purpose': purpose,
-        'space': space,
-        'description': description,
-        'is_flexible': isFlexible,
-        'notification_time': notificationTime,
-        'end_time': endTime,
-        'iot_devices': iotDevices,
-      };
+      final index = _dummyRoutines.indexWhere(
+        (r) => r['id'].toString() == routineId,
+      );
+      if (index != -1) {
+        // 기존 값 유지하면서 업데이트
+        final old = _dummyRoutines[index];
+        final updated = {
+          ...old,
+          if (title != null) 'title': title,
+          if (time != null) 'time': time,
+          if (category != null) 'category': category,
+          if (color != null) 'color': color,
+          if (days != null) 'days': days,
+          if (purpose != null) 'purpose': purpose,
+          if (space != null) 'space': space,
+          if (description != null) 'description': description,
+          if (isFlexible != null) 'is_flexible': isFlexible,
+          if (notificationTime != null) 'notification_time': notificationTime,
+          if (endTime != null) 'end_time': endTime,
+          if (iotDevices != null) 'iot_devices': iotDevices,
+          'isUpdated': true,
+        };
+        _dummyRoutines[index] = updated;
+        return updated;
+      } else {
+        throw Exception('수정할 루틴을 찾을 수 없습니다 (Dummy)');
+      }
     }
 
     try {
@@ -237,6 +328,7 @@ class RoutineService {
     // 1. 더미 로그인 확인
     if (_dummyAuthService.isLoggedIn) {
       debugPrint('🔄 [Dummy] 루틴 삭제: $routineId');
+      _dummyRoutines.removeWhere((r) => r['id'].toString() == routineId);
       return;
     }
 
@@ -423,8 +515,7 @@ class RoutineService {
     // 1. 더미 로그인 확인
     if (_dummyAuthService.isLoggedIn) {
       debugPrint('🔄 [Dummy] 루틴 단건 조회: $routineId');
-      final routines = _getDummyRoutines();
-      final routine = routines.firstWhere(
+      final routine = _dummyRoutines.firstWhere(
         (element) => element['id'].toString() == routineId,
         orElse: () => {},
       );
@@ -461,82 +552,5 @@ class RoutineService {
       debugPrint('❌ 루틴 단건 조회 에러: $e');
       rethrow;
     }
-  }
-
-  // ===== 더미 데이터 =====
-  List<Map<String, dynamic>> _getDummyRoutines() {
-    return [
-      {
-        'id': '1',
-        'title': '모닝 스트레칭',
-        'time': '07:00',
-        'end_time': '08:00',
-        'category': '건강', // purpose
-        'purpose': '건강',
-        'color': '#FF9E9E',
-        'days': [0, 1, 2, 3, 4], // 월~금
-        'space': '방 1',
-        'description': '편안한 분위기에서 가벼운 스트레칭',
-        'is_flexible': true,
-        'notification_time': '10분 전',
-        'isPinned': false,
-        'isUpdated': true, // 업데이트 카드 (그라디언트)
-        'iot_devices': [
-          {'type': '조명', 'brightness': 0.8, 'hasBrightness': true},
-          {'type': '커튼', 'brightness': 0.0, 'hasBrightness': false},
-        ],
-      },
-      {
-        'id': '2',
-        'title': '독서',
-        'time': '20:00',
-        'end_time': '21:00',
-        'category': '자기계발',
-        'purpose': '자기계발',
-        'color': '#9E9EFF',
-        'days': [0, 1, 2, 3, 4, 5, 6],
-        'space': '거실',
-        'description': '조용한 분위기에서 독서',
-        'is_flexible': false,
-        'notification_time': '30분 전',
-        'isPinned': false,
-        'isUpdated': false, // 기본 카드
-        'iot_devices': [],
-      },
-      {
-        'id': '3',
-        'title': '영양제 먹기',
-        'time': '08:00',
-        'end_time': '08:05',
-        'category': '건강',
-        'purpose': '건강',
-        'color': '#9EFF9E',
-        'days': [0, 1, 2, 3, 4, 5, 6],
-        'space': '주방',
-        'description': '',
-        'is_flexible': true,
-        'notification_time': '5분 전',
-        'isPinned': true, // 핀 카드 (회전된 아이콘)
-        'isUpdated': false,
-        'iot_devices': [],
-      },
-      {
-        'id': '4',
-        'title': '영어 단어 암기',
-        'time': '21:00',
-        'end_time': '22:00',
-        'category': '학습',
-        'purpose': '학습',
-        'color': '#FFFF9E',
-        'days': [0, 2, 4],
-        'space': '방 2',
-        'description': '집중할 수 있는 환경',
-        'is_flexible': false,
-        'notification_time': '1시간 전',
-        'isPinned': false,
-        'isUpdated': false, // 기본 카드
-        'iot_devices': [],
-      },
-    ];
   }
 }

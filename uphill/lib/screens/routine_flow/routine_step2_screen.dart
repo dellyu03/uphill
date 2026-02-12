@@ -400,10 +400,8 @@ class _RoutineStep2ScreenState extends State<RoutineStep2Screen> {
               content: Wrap(
                 spacing: 8,
                 children: List.generate(7, (index) {
-                  // 0: Sun, 1: Mon ... or 0: Mon?
-                  // Let's assume standard dart/flutter usage often maps 1..7 for Mon..Sun
-                  // But here let's use 0=Sun, 1=Mon, 2=Tue...
-                  final dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+                  // 0: Mon, 1: Tue, ... 6: Sun (Matching system standard)
+                  final dayNames = ['월', '화', '수', '목', '금', '토', '일'];
                   final isSelected = tempDays.contains(index);
                   return FilterChip(
                     label: Text(dayNames[index]),
@@ -442,7 +440,7 @@ class _RoutineStep2ScreenState extends State<RoutineStep2Screen> {
   String _formatSelectedDays() {
     if (_selectedDays.length == 7) return '매일';
     if (_selectedDays.isEmpty) return '선택 안함';
-    final dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+    final dayNames = ['월', '화', '수', '목', '금', '토', '일'];
     return _selectedDays.map((d) => dayNames[d]).join(', ');
   }
 
