@@ -53,7 +53,7 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F6F6),
+      backgroundColor: const Color(0xFFFBFBFB),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

@@ -137,7 +137,7 @@ class UphillColors extends ThemeExtension<UphillColors> {
 
   // Pre-defined light theme colors based on requirements
   static const light = UphillColors(
-    bgMain: Color(0xFFE9E8E7),
+    bgMain: Color(0xFFFBFBFB),
     routineUpdated: Color(0xFFB3B5A0), // Sage Green
     routineDefault: Color(0xFFF8F8F8), // Off White
     routinePinned: Color(0xFFDAD9D4), // Grey
@@ -167,10 +167,10 @@ class UphillTheme {
         seedColor: const Color(0xFF333333),
         primary: const Color(0xFF333333),
         secondary: const Color(0xFF333333),
-        surface: const Color(0xFFF6F6F6),
+        surface: const Color(0xFFFBFBFB),
         outline: const Color(0xFFD3D3D3),
       ),
-      scaffoldBackgroundColor: const Color(0xFFF6F6F6),
+      scaffoldBackgroundColor: const Color(0xFFFBFBFB),
 
       // Text Selection Theme (Cursor, Selection Handle)
       textSelectionTheme: const TextSelectionThemeData(
