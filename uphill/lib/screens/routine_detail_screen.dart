@@ -37,7 +37,9 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFBFBFB), // Figma Background
+      backgroundColor: Theme.of(
+        context,
+      ).scaffoldBackgroundColor, // Figma Background
       appBar: _buildAppBar(),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _routineFuture,
