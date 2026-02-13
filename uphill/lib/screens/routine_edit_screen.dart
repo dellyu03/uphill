@@ -183,7 +183,7 @@ class _RoutineEditScreenState extends State<RoutineEditScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFBFBFB),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
           '루틴 수정',
