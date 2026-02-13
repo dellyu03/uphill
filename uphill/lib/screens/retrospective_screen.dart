@@ -8,7 +8,7 @@ class RetrospectiveScreen extends StatelessWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: const Color(0xFFE9E8E7),
+        backgroundColor: const Color(0xFFFBFBFB),
         body: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

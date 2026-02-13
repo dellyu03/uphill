@@ -183,7 +183,7 @@ class _RoutineEditScreenState extends State<RoutineEditScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F6F6),
+      backgroundColor: const Color(0xFFFBFBFB),
       appBar: AppBar(
         title: const Text(
           '루틴 수정',
@@ -215,7 +215,7 @@ class _RoutineEditScreenState extends State<RoutineEditScreen>
 
   Widget _buildTabBar() {
     return Container(
-      color: const Color(0xFFF6F6F6),
+      color: const Color(0xFFFBFBFB),
       child: Row(
         children: [
           Expanded(

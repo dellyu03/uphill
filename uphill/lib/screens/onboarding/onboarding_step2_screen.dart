@@ -287,7 +287,7 @@ class _OnboardingStep2ScreenState extends State<OnboardingStep2Screen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE9E8E7),
+      backgroundColor: const Color(0xFFFBFBFB),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(32.0),

@@ -126,7 +126,7 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEEEEEC), // Figma bg color
+      backgroundColor: const Color(0xFFFBFBFB), // Updated to #FBFBFB
       body: FutureBuilder<Map<String, dynamic>>(
         future: _routineFuture,
         builder: (context, snapshot) {
