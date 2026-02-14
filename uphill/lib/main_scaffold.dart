@@ -3,6 +3,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import 'screens/home_screen.dart';
 import 'screens/feedback_screen.dart';
@@ -190,39 +191,41 @@ class _MainScaffoldState extends State<MainScaffold> {
   }
 
   /// 네비게이션 아이콘 반환
-  /// 추후 커스텀 이미지(asset)가 제공되면 이 부분을 Image.asset으로 교체하면 됩니다.
   Widget _getNavIcon(int index, bool isSelected) {
-    final color = isSelected ? Colors.black : const Color(0xFFC6C6C6);
-
-    // TODO: 아이콘 이미지가 준비되면 아래 주석을 해제하고 경로를 수정하여 사용하세요.
-    // final String iconPath;
-    // switch (index) {
-    //   case 0: iconPath = isSelected ? 'assets/icons/home_selected.png' : 'assets/icons/home.png';
-    //   case 1: iconPath = isSelected ? 'assets/icons/feedback_selected.png' : 'assets/icons/feedback.png';
-    //   case 2: iconPath = isSelected ? 'assets/icons/profile_selected.png' : 'assets/icons/profile.png';
-    //   default: iconPath = '';
-    // }
-    // if (iconPath.isNotEmpty) {
-    //   return Image.asset(iconPath, width: 24, height: 24);
-    // }
+    // 선택 여부에 따른 아이콘 경로 설정
+    String iconPath = '';
 
     switch (index) {
       case 0:
-        return Icon(
-          Icons.home_filled, // Filled/Outlined 구분
-          color: color,
-          size: 28,
-        );
+        iconPath = isSelected
+            ? 'assets/icons/home_on.svg'
+            : 'assets/icons/home_off.svg';
+        break;
       case 1:
-        return Icon(
-          Icons.sticky_note_2, // 피드백 느낌의 아이콘
-          color: color,
-          size: 28,
-        );
+        iconPath = isSelected
+            ? 'assets/icons/feedback_on.svg'
+            : 'assets/icons/feedback_off.svg';
+        break;
       case 2:
-        return Icon(Icons.person, color: color, size: 28);
-      default:
-        return const SizedBox.shrink();
+        // 프로필은 on/off가 따로 없는 경우 단일 아이콘 사용
+        iconPath = 'assets/icons/profile.svg';
+        break;
     }
+
+    // SVG 아이콘 반환
+    if (iconPath.isNotEmpty) {
+      return SvgPicture.asset(
+        iconPath,
+        width: 28,
+        height: 28,
+        // 프로필 아이콘의 경우 선택 시 색상 변경이 필요하다면 colorFilter 사용
+        // 현재는 디자인에 따라 원본 색상 유지
+        colorFilter: index == 2 && isSelected
+            ? const ColorFilter.mode(Colors.black, BlendMode.srcIn)
+            : null,
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 }
