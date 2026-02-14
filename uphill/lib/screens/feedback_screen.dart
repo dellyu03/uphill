@@ -208,8 +208,8 @@ class FeedbackScreenState extends State<FeedbackScreen>
       TextConstants.feedbackTitle,
       style: GoogleFonts.montserrat(
         fontSize: 40,
-        fontWeight: FontWeight.bold,
-        color: const Color(0xFF4A4A4A),
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFF555151),
       ),
     );
   }
