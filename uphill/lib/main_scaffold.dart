@@ -45,10 +45,21 @@ class _MainScaffoldState extends State<MainScaffold> {
     const ProfileScreen(),
   ];
 
+  /// 페이지 컨트롤러
+  late final PageController _pageController = PageController(
+    initialPage: _currentIndex,
+  );
+
   @override
   void initState() {
     super.initState();
     _checkAuth();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   /// 저장된 인증 정보 확인
@@ -88,8 +99,15 @@ class _MainScaffoldState extends State<MainScaffold> {
       backgroundColor: colors.bgMain,
       body: Stack(
         children: [
-          // 화면 스택 - 탭별 화면 유지
-          IndexedStack(index: _currentIndex, children: _screens),
+          // 화면 스택 - PageView로 변경하여 슬라이딩 효과 적용
+          PageView(
+            controller: _pageController,
+            physics: const BouncingScrollPhysics(), // 부드러운 스크롤 효과
+            onPageChanged: (index) {
+              setState(() => _currentIndex = index);
+            },
+            children: _screens,
+          ),
           // 바텀 네비게이션 바
           _buildBottomNavBar(),
         ],
@@ -141,7 +159,11 @@ class _MainScaffoldState extends State<MainScaffold> {
 
     return GestureDetector(
       onTap: () => _onNavItemTapped(index),
-      child: _getNavIcon(index, isSelected),
+      behavior: HitTestBehavior.opaque, // 터치 영역 확장
+      child: Container(
+        padding: const EdgeInsets.all(12), // 터치 영역 확보
+        child: _getNavIcon(index, isSelected),
+      ),
     );
   }
 
@@ -157,28 +179,48 @@ class _MainScaffoldState extends State<MainScaffold> {
       _feedbackKey.currentState?.refreshFeedback();
     }
 
-    setState(() {
-      _currentIndex = index;
-    });
+    // 페이지 전환 애니메이션
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+
+    // setState는 onPageChanged에서 처리됨
   }
 
   /// 네비게이션 아이콘 반환
+  /// 추후 커스텀 이미지(asset)가 제공되면 이 부분을 Image.asset으로 교체하면 됩니다.
   Widget _getNavIcon(int index, bool isSelected) {
-    final color = isSelected ? Colors.black : Colors.grey;
+    final color = isSelected ? Colors.black : const Color(0xFFC6C6C6);
+
+    // TODO: 아이콘 이미지가 준비되면 아래 주석을 해제하고 경로를 수정하여 사용하세요.
+    // final String iconPath;
+    // switch (index) {
+    //   case 0: iconPath = isSelected ? 'assets/icons/home_selected.png' : 'assets/icons/home.png';
+    //   case 1: iconPath = isSelected ? 'assets/icons/feedback_selected.png' : 'assets/icons/feedback.png';
+    //   case 2: iconPath = isSelected ? 'assets/icons/profile_selected.png' : 'assets/icons/profile.png';
+    //   default: iconPath = '';
+    // }
+    // if (iconPath.isNotEmpty) {
+    //   return Image.asset(iconPath, width: 24, height: 24);
+    // }
 
     switch (index) {
       case 0:
         return Icon(
-          isSelected ? Icons.home : Icons.home_outlined,
+          Icons.home_filled, // Filled/Outlined 구분
           color: color,
+          size: 28,
         );
       case 1:
-        return Icon(Icons.list_alt, color: color);
-      case 2:
         return Icon(
-          isSelected ? Icons.person : Icons.person_outline,
+          Icons.sticky_note_2, // 피드백 느낌의 아이콘
           color: color,
+          size: 28,
         );
+      case 2:
+        return Icon(Icons.person, color: color, size: 28);
       default:
         return const SizedBox.shrink();
     }
