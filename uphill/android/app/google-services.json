@@ -20,10 +20,6 @@
             "package_name": "com.example.uphill",
             "certificate_hash": "c6da8d692a12d690395e3ae1185e0709c28f184b"
           }
-        },
-        {
-          "client_id": "462781735560-gglnljg1btorssekj3pupbetf1t7ejl6.apps.googleusercontent.com",
-          "client_type": 3
         }
       ],
       "api_key": [
@@ -34,10 +30,6 @@
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
-            {
-              "client_id": "462781735560-gglnljg1btorssekj3pupbetf1t7ejl6.apps.googleusercontent.com",
-              "client_type": 3
-            },
             {
               "client_id": "462781735560-r2dc13banncrt6rh3hesl5l2uib479c5.apps.googleusercontent.com",
               "client_type": 2,

@@ -8,7 +8,6 @@ import 'dart:convert';
 
 import '../constants/app_constants.dart';
 import 'auth_service.dart';
-import 'dummy_auth_service.dart';
 
 /// 루틴 서비스 (Singleton)
 /// 백엔드 API와 통신하여 루틴 데이터를 관리합니다.
@@ -20,7 +19,6 @@ class RoutineService {
 
   /// 인증 서비스 싱글톤
   final AuthService _authService = AuthService();
-  final DummyAuthService _dummyAuthService = DummyAuthService();
 
   // ===== In-Memory Dummy Data =====
   final List<Map<String, dynamic>> _dummyRoutines = [
@@ -103,13 +101,6 @@ class RoutineService {
   /// [Backend 요청] GET /routines
   /// 사용자의 모든 루틴 목록을 반환합니다.
   Future<List<Map<String, dynamic>>> getRoutines() async {
-    // 1. 더미 로그인 확인
-    if (_dummyAuthService.isLoggedIn) {
-      debugPrint('🔄 [Dummy] 루틴 목록 조회');
-      // 더미 데이터 반환
-      return _dummyRoutines;
-    }
-
     try {
       final authHeader = _authService.getAuthHeader();
       if (authHeader == null) {
@@ -156,34 +147,6 @@ class RoutineService {
     String? endTime, // 지속 시간 종료
     List<Map<String, dynamic>>? iotDevices, // IOT 장비 설정
   }) async {
-    // 1. 더미 로그인 확인
-    if (_dummyAuthService.isLoggedIn) {
-      debugPrint('🔄 [Dummy] 루틴 생성: $title');
-      debugPrint('   - Purpose: $purpose');
-      debugPrint('   - Space: $space');
-      debugPrint('   - Devices: ${iotDevices?.length}');
-
-      final newRoutine = {
-        'id': 'dummy_${DateTime.now().millisecondsSinceEpoch}',
-        'title': title,
-        'time': time, // Start Time
-        'category': category,
-        'color': color ?? '#9CAA7D',
-        'days': days ?? [],
-        'purpose': purpose,
-        'space': space,
-        'description': description,
-        'is_flexible': isFlexible,
-        'notification_time': notificationTime,
-        'end_time': endTime,
-        'iot_devices': iotDevices,
-        'isPinned': false,
-        'isUpdated': true,
-      };
-      _dummyRoutines.add(newRoutine);
-      return newRoutine;
-    }
-
     try {
       final authHeader = _authService.getAuthHeader();
       if (authHeader == null) {
@@ -245,38 +208,6 @@ class RoutineService {
     String? endTime,
     List<Map<String, dynamic>>? iotDevices,
   }) async {
-    // 1. 더미 로그인 확인
-    if (_dummyAuthService.isLoggedIn) {
-      debugPrint('🔄 [Dummy] 루틴 수정: $routineId');
-      final index = _dummyRoutines.indexWhere(
-        (r) => r['id'].toString() == routineId,
-      );
-      if (index != -1) {
-        // 기존 값 유지하면서 업데이트
-        final old = _dummyRoutines[index];
-        final updated = {
-          ...old,
-          if (title != null) 'title': title,
-          if (time != null) 'time': time,
-          if (category != null) 'category': category,
-          if (color != null) 'color': color,
-          if (days != null) 'days': days,
-          if (purpose != null) 'purpose': purpose,
-          if (space != null) 'space': space,
-          if (description != null) 'description': description,
-          if (isFlexible != null) 'is_flexible': isFlexible,
-          if (notificationTime != null) 'notification_time': notificationTime,
-          if (endTime != null) 'end_time': endTime,
-          if (iotDevices != null) 'iot_devices': iotDevices,
-          'isUpdated': true,
-        };
-        _dummyRoutines[index] = updated;
-        return updated;
-      } else {
-        throw Exception('수정할 루틴을 찾을 수 없습니다 (Dummy)');
-      }
-    }
-
     try {
       final authHeader = _authService.getAuthHeader();
       if (authHeader == null) {
@@ -325,13 +256,6 @@ class RoutineService {
   /// 루틴 삭제
   /// [Backend 요청] DELETE /routines/{id}
   Future<void> deleteRoutine(String routineId) async {
-    // 1. 더미 로그인 확인
-    if (_dummyAuthService.isLoggedIn) {
-      debugPrint('🔄 [Dummy] 루틴 삭제: $routineId');
-      _dummyRoutines.removeWhere((r) => r['id'].toString() == routineId);
-      return;
-    }
-
     try {
       final authHeader = _authService.getAuthHeader();
       if (authHeader == null) {
@@ -368,19 +292,6 @@ class RoutineService {
     required DateTime endedAt,
     required int durationSeconds,
   }) async {
-    // 1. 더미 로그인 확인
-    if (_dummyAuthService.isLoggedIn) {
-      debugPrint('🔄 [Dummy] 수행 기록 저장: $routineTitle');
-      return {
-        'id': 'dummy_exec_${DateTime.now().millisecondsSinceEpoch}',
-        'routine_id': routineId,
-        'routine_title': routineTitle,
-        'started_at': startedAt.toUtc().toIso8601String(),
-        'ended_at': endedAt.toUtc().toIso8601String(),
-        'duration_seconds': durationSeconds,
-      };
-    }
-
     try {
       final authHeader = _authService.getAuthHeader();
       if (authHeader == null) {
@@ -421,17 +332,6 @@ class RoutineService {
   /// 일간 수행 기록 조회
   /// [Backend 요청] GET /executions/daily?date={date}
   Future<Map<String, dynamic>> getDailyExecutions(String date) async {
-    // 1. 더미 로그인 확인
-    if (_dummyAuthService.isLoggedIn) {
-      debugPrint('🔄 [Dummy] 일간 기록 조회: $date');
-      return {
-        'date': date,
-        'executions': [],
-        'total_duration_seconds': 0,
-        'total_count': 0,
-      };
-    }
-
     try {
       final authHeader = _authService.getAuthHeader();
       if (authHeader == null) {
@@ -465,20 +365,6 @@ class RoutineService {
   /// 일간 AI 피드백 조회
   /// [Backend 요청] GET /executions/daily/{date}/feedback
   Future<Map<String, dynamic>> getDailyFeedback(String date) async {
-    // 1. 더미 로그인 확인
-    if (_dummyAuthService.isLoggedIn) {
-      debugPrint('🔄 [Dummy] AI 피드백 조회: $date');
-      return {
-        'date': date,
-        'ai_feedback_short': '침대에서 너무 많은 시간을 보내고 있어요',
-        'ai_feedback_full':
-            '이러이러한 루틴을 추가해 보는것이 어떤가요? 이러이러한 루틴을 추가해 보는것이 어떤가요? 이러이러한 루틴을 추가해 보는것이 어떤가요...',
-        'recommended_routines': ['명상하기', '스트레칭'],
-        'background_image_url': 'assets/images/img_feedback_background.png',
-        'summary': {'total_routines': 3, 'total_duration_seconds': 1800},
-      };
-    }
-
     try {
       final authHeader = _authService.getAuthHeader();
       if (authHeader == null) {
@@ -512,20 +398,6 @@ class RoutineService {
   /// 루틴 단건 조회
   /// [Backend 요청] GET /routines/{id}
   Future<Map<String, dynamic>> getRoutine(String routineId) async {
-    // 1. 더미 로그인 확인
-    if (_dummyAuthService.isLoggedIn) {
-      debugPrint('🔄 [Dummy] 루틴 단건 조회: $routineId');
-      final routine = _dummyRoutines.firstWhere(
-        (element) => element['id'].toString() == routineId,
-        orElse: () => {},
-      );
-
-      if (routine.isEmpty) {
-        throw Exception('루틴을 찾을 수 없습니다.');
-      }
-      return routine;
-    }
-
     try {
       final authHeader = _authService.getAuthHeader();
       if (authHeader == null) {

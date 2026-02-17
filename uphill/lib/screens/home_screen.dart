@@ -15,7 +15,6 @@ import 'routine_detail_screen.dart';
 import 'routine_in_progress_screen.dart';
 import '../services/routine_service.dart';
 import '../services/auth_service.dart';
-import '../services/dummy_auth_service.dart';
 
 /// 홈 화면 위젯
 /// 시간대별 루틴 타임라인을 표시합니다.
@@ -46,7 +45,6 @@ class HomeScreenState extends State<HomeScreen> {
 
   /// 인증 서비스 싱글톤
   final AuthService _authService = AuthService();
-  final DummyAuthService _dummyAuthService = DummyAuthService();
 
   /// 로딩 상태
   bool _isLoading = true;
@@ -64,8 +62,7 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   /// 로그인 여부 확인
-  bool get _isLoggedIn =>
-      _authService.isLoggedIn || _dummyAuthService.isLoggedIn;
+  bool get _isLoggedIn => _authService.isLoggedIn;
 
   /// 루틴 목록 로드
   /// [Backend 요청] GET /routines - 사용자 루틴 목록 조회
@@ -75,15 +72,10 @@ class HomeScreenState extends State<HomeScreen> {
     try {
       // 로그인 확인
       if (!_isLoggedIn) {
-        final loaded = await _authService.loadStoredAuth();
-        final dummyLoaded = await _dummyAuthService.loadStoredAuth();
-
-        if (!loaded && !dummyLoaded) {
-          if (mounted) {
-            setState(() => _isLoading = false);
-          }
-          return;
+        if (mounted) {
+          setState(() => _isLoading = false);
         }
+        return;
       }
 
       // [Backend 요청] 루틴 목록 조회
@@ -336,20 +328,15 @@ class HomeScreenState extends State<HomeScreen> {
   Future<void> _onAddRoutinePressed() async {
     // 로그인 확인
     if (!_isLoggedIn) {
-      final loaded = await _authService.loadStoredAuth();
-      final dummyLoaded = await _dummyAuthService.loadStoredAuth();
-
-      if (!loaded && !dummyLoaded) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(TextConstants.loginRequired),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-        return;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(TextConstants.loginRequired),
+            backgroundColor: Colors.orange,
+          ),
+        );
       }
+      return;
     }
 
     if (!mounted) return;

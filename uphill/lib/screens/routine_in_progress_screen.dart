@@ -25,11 +25,15 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
   // Timer State
   Timer? _timer;
 
+  // 실제 시작 시간 (화면 진입 시간)
+  late DateTime _actualStartTime;
+
   bool _isCompleting = false;
 
   @override
   void initState() {
     super.initState();
+    _actualStartTime = DateTime.now(); // 실제 시작 시간 기록
     _routineFuture = _routineService.getRoutine(widget.routineId);
     _startTimer();
   }
@@ -56,28 +60,21 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
     setState(() => _isCompleting = true);
 
     try {
-      // Fetch data to calculate duration from scheduled time
-      final data = await _routineFuture;
-      final timeStr = data['time'] as String? ?? '00:00';
+      // 실제 종료 시간
       final now = DateTime.now();
-      final parts = timeStr.split(':');
-      final hour = int.parse(parts[0]);
-      final minute = int.parse(parts[1]);
 
-      // Calculate Scheduled Start Time for Today
-      final routineStartTime = DateTime(
-        now.year,
-        now.month,
-        now.day,
-        hour,
-        minute,
-      );
-      final duration = now.difference(routineStartTime);
+      // 실제 시작 시간부터 종료 시간까지의 duration 계산
+      final duration = now.difference(_actualStartTime);
+
+      debugPrint('🎯 루틴 완료:');
+      debugPrint('   시작: ${_actualStartTime.toString()}');
+      debugPrint('   종료: ${now.toString()}');
+      debugPrint('   소요: ${duration.inMinutes}분 ${duration.inSeconds % 60}초');
 
       await _routineService.createExecution(
         routineId: widget.routineId,
         routineTitle: widget.title,
-        startedAt: routineStartTime,
+        startedAt: _actualStartTime, // 실제 시작 시간 사용
         endedAt: now,
         durationSeconds: duration.inSeconds,
       );
@@ -307,25 +304,9 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
                             const SizedBox(height: 4),
                             Builder(
                               builder: (context) {
-                                // Parse Start Time from 'time' field (e.g. "07:00")
-                                final timeStr =
-                                    data['time'] as String? ?? '00:00';
+                                // 실제 시작 시간부터 현재까지의 경과 시간
                                 final now = DateTime.now();
-                                final parts = timeStr.split(':');
-                                final hour = int.parse(parts[0]);
-                                final minute = int.parse(parts[1]);
-
-                                // Create DateTime for Today at Routine Time
-                                final routineStartTime = DateTime(
-                                  now.year,
-                                  now.month,
-                                  now.day,
-                                  hour,
-                                  minute,
-                                );
-                                final elapsed = now.difference(
-                                  routineStartTime,
-                                );
+                                final elapsed = now.difference(_actualStartTime);
 
                                 return Row(
                                   mainAxisAlignment:
@@ -336,19 +317,18 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        // Start Time (Black)
+                                        // 실제 시작 시간 (Black)
                                         Text(
-                                          _formatDateTime(routineStartTime),
+                                          _formatDateTime(_actualStartTime),
                                           style: GoogleFonts.inter(
                                             fontSize: 30,
                                             fontWeight: FontWeight.w600,
-                                            color: Colors
-                                                .black, // Explicitly Black
+                                            color: Colors.black,
                                           ),
                                         ),
-                                        // Elapsed Time (Red)
+                                        // 경과 시간 (Red)
                                         Text(
-                                          '+${(elapsed.inMinutes).toString()}m',
+                                          '+${elapsed.inMinutes}m ${elapsed.inSeconds % 60}s',
                                           style: GoogleFonts.inter(
                                             fontSize: 18,
                                             color: const Color(0xFFFF6E6E),

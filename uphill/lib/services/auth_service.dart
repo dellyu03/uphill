@@ -3,7 +3,6 @@
 library;
 
 import 'package:flutter/foundation.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,8 +18,8 @@ class AuthService {
   factory AuthService() => _instance;
   AuthService._internal();
 
-  /// Google Sign In 인스턴스
-  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
+  /// Firebase Auth 인스턴스
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
   /// Firebase ID Token (API 인증용)
   String? _firebaseToken;
@@ -31,85 +30,62 @@ class AuthService {
   /// 사용자 정보
   Map<String, dynamic>? _userInfo;
 
+  /// 신규 사용자 여부
+  bool _isNewUser = false;
+
   // Getters
   String? get firebaseToken => _firebaseToken;
   String? get uid => _uid;
   Map<String, dynamic>? get userInfo => _userInfo;
   bool get isLoggedIn => _firebaseToken != null && _uid != null;
+  bool get isNewUser => _isNewUser;
 
-  /// Google Sign In 및 백엔드 인증
-  /// [Backend 요청] POST /auth/google
-  /// Google ID Token을 백엔드로 전송하여 Firebase Custom Token을 받습니다.
+  /// Google Sign In (Firebase Auth 사용)
+  /// Firebase Auth로 직접 Google 로그인 후 백엔드와 동기화
   Future<bool> signIn() async {
     try {
-      debugPrint('🔄 Google Sign In 시작...');
+      debugPrint('🔄 Firebase Google Sign In 시작...');
 
-      // 1. Google Sign In
-      final GoogleSignInAccount? user = await _googleSignIn.signIn();
-      if (user == null) {
-        debugPrint('❌ 사용자가 로그인을 취소했습니다');
-        return false;
-      }
+      // 1. Firebase Auth로 Google Sign In
+      final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+      final UserCredential userCredential =
+          await _firebaseAuth.signInWithProvider(googleProvider);
 
-      debugPrint('✅ Google Sign In 성공: ${user.email}');
-
-      // 2. Google ID Token 획득
-      final googleAuth = await user.authentication;
-      final idToken = googleAuth.idToken;
-      if (idToken == null) {
-        debugPrint('❌ ID Token을 가져올 수 없습니다');
-        return false;
-      }
-
-      // 3. [Backend 요청] Google ID Token으로 백엔드 인증
-      debugPrint('📤 백엔드로 ID Token 전송 중...');
-      final loginRes = await http.post(
-        Uri.parse('${ApiConstants.baseUrl}${ApiConstants.authGoogle}'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'id_token': idToken}),
-      );
-
-      debugPrint('📥 백엔드 응답: ${loginRes.statusCode}');
-      if (loginRes.statusCode != 200) {
-        debugPrint('❌ 백엔드 로그인 실패: ${loginRes.body}');
-        return false;
-      }
-
-      final loginData = jsonDecode(loginRes.body);
-      _uid = loginData['uid'];
-      final customToken = loginData['firebase_token'];
-
-      // 4. Firebase Auth로 Custom Token 로그인
-      debugPrint('🔄 Firebase Auth로 Custom Token 로그인 중...');
-      final credential = await FirebaseAuth.instance.signInWithCustomToken(
-        customToken,
-      );
-      final firebaseUser = credential.user;
-
+      final User? firebaseUser = userCredential.user;
       if (firebaseUser == null) {
         debugPrint('❌ Firebase 사용자를 가져올 수 없습니다');
         return false;
       }
 
-      // 5. Firebase ID Token 획득
+      // 신규 사용자 여부 확인
+      _isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
+
+      debugPrint('✅ Firebase Google Sign In 성공: ${firebaseUser.email}');
+      debugPrint('   신규 사용자: $_isNewUser');
+
+      // 2. Firebase ID Token 획득
       final firebaseIdToken = await firebaseUser.getIdToken();
       if (firebaseIdToken == null) {
-        debugPrint('❌ ID Token을 가져올 수 없습니다');
+        debugPrint('❌ Firebase ID Token을 가져올 수 없습니다');
         return false;
       }
 
       _firebaseToken = firebaseIdToken;
+      _uid = firebaseUser.uid;
       _userInfo = {
-        'uid': _uid,
-        'email': loginData['email'],
-        'name': loginData['name'],
-        'picture': loginData['picture'],
+        'uid': firebaseUser.uid,
+        'email': firebaseUser.email,
+        'name': firebaseUser.displayName,
+        'picture': firebaseUser.photoURL,
       };
 
-      // 6. SharedPreferences에 저장
-      await _saveAuthData(customToken);
+      // 3. SharedPreferences에 저장
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(StorageKeys.firebaseToken, _firebaseToken!);
+      await prefs.setString(StorageKeys.uid, _uid!);
+      await prefs.setString(StorageKeys.userInfo, jsonEncode(_userInfo));
 
-      debugPrint('✅ 백엔드 로그인 성공! UID: $_uid');
+      debugPrint('✅ 로그인 성공! UID: $_uid');
       debugPrint('✅ Firebase ID Token 획득 성공!');
       return true;
     } catch (e, stack) {
@@ -122,20 +98,11 @@ class AuthService {
     }
   }
 
-  /// 인증 데이터 저장
-  Future<void> _saveAuthData(String customToken) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(StorageKeys.firebaseToken, _firebaseToken!);
-    await prefs.setString(StorageKeys.customToken, customToken);
-    await prefs.setString(StorageKeys.uid, _uid!);
-    await prefs.setString(StorageKeys.userInfo, jsonEncode(_userInfo));
-  }
 
   /// 로그아웃
   /// 모든 인증 정보를 초기화합니다.
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
-    await FirebaseAuth.instance.signOut();
+    await _firebaseAuth.signOut();
 
     _firebaseToken = null;
     _uid = null;
@@ -144,19 +111,37 @@ class AuthService {
     // SharedPreferences에서 삭제
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(StorageKeys.firebaseToken);
-    await prefs.remove(StorageKeys.customToken);
     await prefs.remove(StorageKeys.uid);
     await prefs.remove(StorageKeys.userInfo);
+
+    debugPrint('✅ 로그아웃 완료');
   }
 
   /// 저장된 인증 정보 로드
   /// Firebase Auth 상태 또는 저장된 Custom Token으로 복구합니다.
   Future<bool> loadStoredAuth() async {
     try {
+      debugPrint('🔄 저장된 인증 정보 로드 시도...');
+
       // 1. Firebase Auth에서 현재 사용자 확인
       final firebaseUser = FirebaseAuth.instance.currentUser;
       if (firebaseUser != null) {
-        final idToken = await firebaseUser.getIdToken();
+        debugPrint('✅ Firebase Auth 사용자 발견: ${firebaseUser.uid}');
+
+        // 타임아웃 5초 설정
+        final idToken = await firebaseUser.getIdToken().timeout(
+          const Duration(seconds: 5),
+          onTimeout: () {
+            debugPrint('⚠️ ID Token 가져오기 타임아웃');
+            return null;
+          },
+        );
+
+        if (idToken == null) {
+          debugPrint('❌ ID Token 가져오기 실패');
+          return false;
+        }
+
         _firebaseToken = idToken;
         _uid = firebaseUser.uid;
 
@@ -170,49 +155,11 @@ class AuthService {
         await prefs.setString(StorageKeys.firebaseToken, _firebaseToken!);
         await prefs.setString(StorageKeys.uid, _uid!);
 
+        debugPrint('✅ Firebase Auth로 자동 로그인 성공');
         return true;
       }
 
-      // 2. Firebase Auth에 없으면 Custom Token으로 재로그인 시도
-      final prefs = await SharedPreferences.getInstance();
-      final customToken = prefs.getString(StorageKeys.customToken);
-      final uid = prefs.getString(StorageKeys.uid);
-      final userInfoStr = prefs.getString(StorageKeys.userInfo);
-
-      if (customToken != null && uid != null) {
-        try {
-          debugPrint('🔄 저장된 Custom Token으로 Firebase Auth 재로그인 시도...');
-
-          final credential = await FirebaseAuth.instance.signInWithCustomToken(
-            customToken,
-          );
-          final firebaseUser = credential.user;
-
-          if (firebaseUser != null) {
-            final idToken = await firebaseUser.getIdToken();
-            if (idToken != null) {
-              _firebaseToken = idToken;
-              _uid = firebaseUser.uid;
-              if (userInfoStr != null) {
-                _userInfo = jsonDecode(userInfoStr);
-              }
-
-              // SharedPreferences 업데이트
-              await prefs.setString(StorageKeys.firebaseToken, _firebaseToken!);
-              await prefs.setString(StorageKeys.uid, _uid!);
-
-              debugPrint('✅ Custom Token으로 재로그인 성공! ID Token 획득 완료');
-              return true;
-            }
-          }
-        } catch (e) {
-          debugPrint('❌ Custom Token으로 재로그인 실패: $e');
-          // Custom Token이 만료되었거나 유효하지 않으면 삭제
-          await _clearStoredAuth(prefs);
-          return false;
-        }
-      }
-
+      debugPrint('ℹ️ 저장된 인증 정보 없음');
       return false;
     } catch (e) {
       debugPrint('❌ 저장된 인증 정보 로드 실패: $e');
@@ -220,13 +167,6 @@ class AuthService {
     }
   }
 
-  /// 저장된 인증 정보 삭제
-  Future<void> _clearStoredAuth(SharedPreferences prefs) async {
-    await prefs.remove(StorageKeys.customToken);
-    await prefs.remove(StorageKeys.firebaseToken);
-    await prefs.remove(StorageKeys.uid);
-    await prefs.remove(StorageKeys.userInfo);
-  }
 
   /// ID Token 갱신 (만료된 경우)
   Future<String?> refreshToken() async {
@@ -254,5 +194,29 @@ class AuthService {
   String? getAuthHeader() {
     if (_firebaseToken == null) return null;
     return 'Bearer $_firebaseToken';
+  }
+
+  /// 프로필 업데이트
+  /// 사용자 이름과 프로필 사진을 업데이트합니다.
+  Future<void> updateProfile({String? name, String? picture}) async {
+    if (_userInfo != null) {
+      if (name != null) _userInfo!['name'] = name;
+      if (picture != null) _userInfo!['picture'] = picture;
+
+      // SharedPreferences에 저장
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(StorageKeys.userInfo, jsonEncode(_userInfo));
+
+      debugPrint('✅ 프로필 업데이트 완료 (로컬)');
+      if (name != null) debugPrint('   - 이름: $name');
+      if (picture != null) debugPrint('   - 사진: $picture');
+
+      // TODO: 백엔드에 프로필 업데이트 API가 구현되면 여기서 호출
+      // final response = await http.put(
+      //   Uri.parse('${ApiConstants.baseUrl}/user/profile'),
+      //   headers: {'Authorization': getAuthHeader()!},
+      //   body: jsonEncode({'name': name, 'picture': picture}),
+      // );
+    }
   }
 }

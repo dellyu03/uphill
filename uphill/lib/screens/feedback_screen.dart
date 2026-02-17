@@ -9,7 +9,6 @@ import '../theme/app_theme.dart';
 import '../constants/app_constants.dart';
 import '../services/routine_service.dart';
 import '../services/auth_service.dart';
-import '../services/dummy_auth_service.dart';
 
 /// 피드백 화면 위젯
 /// 주간 피드백과 일간 AI 피드백을 표시합니다.
@@ -29,7 +28,6 @@ class FeedbackScreenState extends State<FeedbackScreen>
 
   /// 인증 서비스 싱글톤
   final AuthService _authService = AuthService();
-  final DummyAuthService _dummyAuthService = DummyAuthService();
 
   /// 로딩 상태
   bool _isLoading = true;
@@ -75,8 +73,7 @@ class FeedbackScreenState extends State<FeedbackScreen>
   }
 
   /// 로그인 여부 확인
-  bool get _isLoggedIn =>
-      _authService.isLoggedIn || _dummyAuthService.isLoggedIn;
+  bool get _isLoggedIn => _authService.isLoggedIn;
 
   /// 일간 피드백 로드
   /// [Backend 요청] GET /executions/daily/{date}/feedback
@@ -92,9 +89,8 @@ class FeedbackScreenState extends State<FeedbackScreen>
       // 로그인 확인
       if (!_isLoggedIn) {
         final loaded = await _authService.loadStoredAuth();
-        final dummyLoaded = await _dummyAuthService.loadStoredAuth();
 
-        if (!loaded && !dummyLoaded) {
+        if (!loaded) {
           if (!mounted) return;
           setState(() {
             _isLoading = false;

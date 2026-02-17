@@ -65,11 +65,11 @@ class _OnboardingStep2ScreenState extends State<OnboardingStep2Screen> {
 
       if (!mounted) return;
 
-      // 카메라 화면으로 이동
+      // 방 스캔 화면으로 이동 (카메라 객체 전달)
       Navigator.pushNamed(
         context,
-        '/onboarding/step3',
-        arguments: {'hasCamera': true, 'camera': camera},
+        '/onboarding/room_scan',
+        arguments: {'camera': camera},
       );
     } catch (e) {
       debugPrint('카메라 초기화 오류: $e');

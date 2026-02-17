@@ -11,6 +11,7 @@ import 'screens/onboarding/onboarding_step1_screen.dart';
 import 'screens/onboarding/onboarding_step2_screen.dart';
 import 'screens/onboarding/onboarding_step3_screen.dart';
 import 'screens/onboarding/onboarding_step4_screen.dart';
+import 'screens/onboarding/room_scan_screen.dart';
 import 'theme/app_theme.dart';
 import 'constants/app_constants.dart';
 
@@ -41,6 +42,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/onboarding/step1': (context) => const OnboardingStep1Screen(),
         '/onboarding/step2': (context) => const OnboardingStep2Screen(),
+        '/onboarding/room_scan': (context) => const RoomScanScreen(),
         '/onboarding/step3': (context) => const OnboardingStep3Screen(),
         '/onboarding/step4': (context) => const OnboardingStep4Screen(),
       },

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../services/dummy_auth_service.dart';
+import '../../services/auth_service.dart';
 import '../../main_scaffold.dart';
 import 'onboarding_step1_screen.dart';
 
@@ -13,7 +13,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final DummyAuthService _authService = DummyAuthService();
+  final AuthService _authService = AuthService();
   bool _loading = false;
   bool _checkingAuth = true;
 
@@ -24,98 +24,53 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _checkExistingAuth() async {
-    final hasAuth = await _authService.loadStoredAuth();
-    if (hasAuth && _authService.isLoggedIn) {
-      if (mounted) {
-        // 온보딩 완료 여부 확인
-        if (_authService.onboardingCompleted) {
+    try {
+      // 타임아웃 10초 설정
+      final hasAuth = await _authService.loadStoredAuth().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          debugPrint('⚠️ 인증 정보 로드 타임아웃');
+          return false;
+        },
+      );
+
+      if (hasAuth && _authService.isLoggedIn) {
+        if (mounted) {
+          // 기존 사용자는 온보딩 완료된 것으로 간주하고 메인으로
+          debugPrint('✅ 자동 로그인 성공 - 메인 화면으로 이동');
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const MainScaffold()),
           );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const OnboardingStep1Screen(),
-            ),
-          );
+        }
+      } else {
+        if (mounted) {
+          debugPrint('ℹ️ 저장된 인증 정보 없음 - 로그인 화면 표시');
+          setState(() => _checkingAuth = false);
         }
       }
-    } else {
-      setState(() => _checkingAuth = false);
-    }
-  }
-
-  Future<void> _showAccountSelection() async {
-    final emails = _authService.getAvailableEmails();
-
-    final selectedEmail = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Text(
-          '테스트 계정 선택',
-          style: GoogleFonts.notoSansKr(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF1B1B1B),
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ...emails.map(
-              (email) => ListTile(
-                title: Text(
-                  email,
-                  style: GoogleFonts.notoSansKr(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-                onTap: () => Navigator.pop(context, email),
-              ),
-            ),
-            const Divider(),
-            ListTile(
-              title: Text(
-                '새 계정 만들기',
-                style: GoogleFonts.notoSansKr(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF9CAA7D),
-                ),
-              ),
-              onTap: () => Navigator.pop(context, 'new_account'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (selectedEmail != null) {
-      if (selectedEmail == 'new_account') {
-        final newEmail =
-            'test${DateTime.now().millisecondsSinceEpoch}@test.com';
-        await _signInWithEmail(newEmail);
-      } else {
-        await _signInWithEmail(selectedEmail);
+    } catch (e) {
+      debugPrint('❌ 인증 확인 중 에러: $e');
+      if (mounted) {
+        setState(() => _checkingAuth = false);
       }
     }
   }
 
-  Future<void> _signInWithEmail(String email) async {
+  /// Google 로그인 실행
+  /// [Backend 요청] POST /auth/google
+  Future<void> _signInWithGoogle() async {
     setState(() => _loading = true);
 
     try {
-      final success = await _authService.signIn(email);
+      // Google Sign In 및 백엔드 인증
+      final success = await _authService.signIn();
 
       if (success && _authService.isLoggedIn) {
         if (mounted) {
-          // 신규 사용자는 온보딩으로, 기존 사용자는 메인으로
-          if (_authService.isNewUser || !_authService.onboardingCompleted) {
+          // 신규 사용자면 온보딩으로, 기존 사용자면 메인으로
+          if (_authService.isNewUser) {
+            debugPrint('✅ 신규 사용자 - 온보딩으로 이동');
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
@@ -123,6 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             );
           } else {
+            debugPrint('✅ 기존 사용자 - 메인 화면으로 이동');
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => const MainScaffold()),
@@ -135,7 +91,10 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("로그인 실패: $e"), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text("로그인 실패: $e"),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -260,7 +219,7 @@ class _LoginScreenState extends State<LoginScreen> {
           width: double.infinity,
           height: 56,
           child: ElevatedButton(
-            onPressed: _loading ? null : _showAccountSelection,
+            onPressed: _loading ? null : _signInWithGoogle,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: const Color(0xFF1B1B1B),
@@ -318,7 +277,7 @@ class _LoginScreenState extends State<LoginScreen> {
           width: double.infinity,
           height: 56,
           child: ElevatedButton(
-            onPressed: _loading ? null : _showAccountSelection,
+            onPressed: _loading ? null : _signInWithGoogle,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: const Color(0xFF1B1B1B),

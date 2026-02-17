@@ -8,7 +8,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'screens/home_screen.dart';
 import 'screens/feedback_screen.dart';
 import 'screens/profile_screen.dart';
-import 'services/dummy_auth_service.dart';
+import 'services/auth_service.dart';
 import 'screens/onboarding/login_screen.dart';
 import 'constants/app_constants.dart';
 import 'theme/app_theme.dart';
@@ -34,10 +34,7 @@ class _MainScaffoldState extends State<MainScaffold> {
       GlobalKey<FeedbackScreenState>();
 
   /// 인증 서비스 싱글톤
-  final DummyAuthService _authService = DummyAuthService();
-
-  /// 인증 확인 중 여부
-  bool _checkingAuth = true;
+  final AuthService _authService = AuthService();
 
   /// 화면 목록
   late final List<Widget> _screens = [
@@ -52,50 +49,17 @@ class _MainScaffoldState extends State<MainScaffold> {
   );
 
   @override
-  void initState() {
-    super.initState();
-    _checkAuth();
-  }
-
-  @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
-  }
-
-  /// 저장된 인증 정보 확인
-  /// 로그인되어 있지 않으면 로그인 화면으로 이동합니다.
-  Future<void> _checkAuth() async {
-    // [Backend 요청] 저장된 인증 정보 로드
-    final hasAuth = await _authService.loadStoredAuth();
-
-    if (!hasAuth || !_authService.isLoggedIn) {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
-      }
-    } else {
-      if (mounted) {
-        setState(() => _checkingAuth = false);
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<UphillColors>()!;
 
-    // 인증 확인 중 로딩 표시
-    if (_checkingAuth) {
-      return Scaffold(
-        backgroundColor: colors.bgMain,
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    }
-
     // 메인 스캐폴드 - 화면 + 바텀 네비게이션
+    // 인증은 LoginScreen에서 이미 확인했으므로 여기서는 확인하지 않음
     return Scaffold(
       backgroundColor: colors.bgMain,
       body: Stack(

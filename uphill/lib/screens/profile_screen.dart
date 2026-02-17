@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import '../services/dummy_auth_service.dart';
+import '../services/auth_service.dart';
 import 'onboarding/login_screen.dart';
 import 'profile_edit_screen.dart';
 
@@ -15,7 +15,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<UphillColors>()!;
-    final authService = DummyAuthService();
+    final authService = AuthService();
     final userInfo = authService.userInfo;
 
     return Scaffold(
@@ -123,16 +123,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Icons.logout,
                 '로그아웃',
                 onTap: () async {
-                  final authService = DummyAuthService();
-                  await authService.signOut();
-                  if (context.mounted) {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const LoginScreen(),
-                      ),
-                      (route) => false,
-                    );
+                  // 로그아웃 확인 다이얼로그
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('로그아웃'),
+                      content: const Text('정말 로그아웃 하시겠습니까?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('취소'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('로그아웃'),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirmed == true && context.mounted) {
+                    // [Backend 요청] 로그아웃
+                    final authService = AuthService();
+                    await authService.signOut();
+
+                    if (context.mounted) {
+                      // 모든 화면을 제거하고 로그인 화면으로 이동
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LoginScreen(),
+                        ),
+                        (route) => false,
+                      );
+                    }
                   }
                 },
               ),

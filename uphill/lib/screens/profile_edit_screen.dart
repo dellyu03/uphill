@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import '../services/dummy_auth_service.dart';
+import '../services/auth_service.dart';
 
 class ProfileEditScreen extends StatefulWidget {
   const ProfileEditScreen({super.key});
@@ -11,7 +11,7 @@ class ProfileEditScreen extends StatefulWidget {
 
 class _ProfileEditScreenState extends State<ProfileEditScreen> {
   final _nameController = TextEditingController();
-  final _authService = DummyAuthService(); // Assuming this is where we get data
+  final _authService = AuthService();
   String? _profileImageUrl;
 
   @override
