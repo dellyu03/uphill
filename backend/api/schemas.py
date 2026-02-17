@@ -10,6 +10,14 @@ class RoutineCreate(BaseModel):
     category: str
     color: Optional[str] = None  # 색상 코드 (예: "#FF5722")
     days: Optional[List[int]] = None  # 반복 요일 (0=월, 1=화, ..., 6=일)
+    # 프리미엄 UI 추가 필드
+    purpose: Optional[str] = None  # 루틴 목적
+    space: Optional[str] = None  # 수행 공간
+    description: Optional[str] = None  # 루틴 설명
+    is_flexible: Optional[bool] = None  # 유연성 여부
+    notification_time: Optional[str] = None  # 알림 시간
+    end_time: Optional[str] = None  # 종료 시간 (HH:MM)
+    iot_devices: Optional[List[dict]] = None  # IoT 기기 설정
 
 
 class RoutineUpdate(BaseModel):
@@ -19,6 +27,14 @@ class RoutineUpdate(BaseModel):
     category: Optional[str] = None
     color: Optional[str] = None
     days: Optional[List[int]] = None  # 반복 요일 (0=월, 1=화, ..., 6=일)
+    # 프리미엄 UI 추가 필드
+    purpose: Optional[str] = None
+    space: Optional[str] = None
+    description: Optional[str] = None
+    is_flexible: Optional[bool] = None
+    notification_time: Optional[str] = None
+    end_time: Optional[str] = None
+    iot_devices: Optional[List[dict]] = None
 
 
 class RoutineResponse(BaseModel):
@@ -30,6 +46,14 @@ class RoutineResponse(BaseModel):
     category: str
     color: Optional[str] = None
     days: Optional[List[int]] = None  # 반복 요일 (0=월, 1=화, ..., 6=일)
+    # 프리미엄 UI 추가 필드
+    purpose: Optional[str] = None
+    space: Optional[str] = None
+    description: Optional[str] = None
+    is_flexible: Optional[bool] = None
+    notification_time: Optional[str] = None
+    end_time: Optional[str] = None
+    iot_devices: Optional[List[dict]] = None
     created_at: str
     updated_at: str
 

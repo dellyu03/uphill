@@ -4,6 +4,7 @@ from auth.google_router import router as google_router
 from api.user import router as user_router
 from api.routines import router as routines_router
 from api.executions import router as executions_router
+from api.room_scan import router as room_scan_router
 import auth.firebase_init
 from dotenv import load_dotenv
 
@@ -24,6 +25,7 @@ app.include_router(google_router)
 app.include_router(user_router)
 app.include_router(routines_router)
 app.include_router(executions_router)
+app.include_router(room_scan_router)
 
 
 @app.get("/")

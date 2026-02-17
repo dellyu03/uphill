@@ -75,6 +75,14 @@ class RoutineService:
             "category": routine.category,
             "color": routine.color,
             "days": routine.days,
+            # 프리미엄 UI 추가 필드
+            "purpose": routine.purpose,
+            "space": routine.space,
+            "description": routine.description,
+            "is_flexible": routine.is_flexible,
+            "notification_time": routine.notification_time,
+            "end_time": routine.end_time,
+            "iot_devices": routine.iot_devices,
             "created_at": now_str,
             "updated_at": now_str,
         }
@@ -90,6 +98,13 @@ class RoutineService:
             category=routine.category,
             color=routine.color,
             days=routine.days,
+            purpose=routine.purpose,
+            space=routine.space,
+            description=routine.description,
+            is_flexible=routine.is_flexible,
+            notification_time=routine.notification_time,
+            end_time=routine.end_time,
+            iot_devices=routine.iot_devices,
             created_at=now_str,
             updated_at=now_str,
         )
@@ -119,6 +134,13 @@ class RoutineService:
                 category=data.get("category", ""),
                 color=data.get("color"),
                 days=data.get("days"),
+                purpose=data.get("purpose"),
+                space=data.get("space"),
+                description=data.get("description"),
+                is_flexible=data.get("is_flexible"),
+                notification_time=data.get("notification_time"),
+                end_time=data.get("end_time"),
+                iot_devices=data.get("iot_devices"),
                 created_at=data.get("created_at", ""),
                 updated_at=data.get("updated_at", ""),
             )
@@ -156,6 +178,13 @@ class RoutineService:
             category=data.get("category", ""),
             color=data.get("color"),
             days=data.get("days"),
+            purpose=data.get("purpose"),
+            space=data.get("space"),
+            description=data.get("description"),
+            is_flexible=data.get("is_flexible"),
+            notification_time=data.get("notification_time"),
+            end_time=data.get("end_time"),
+            iot_devices=data.get("iot_devices"),
             created_at=data.get("created_at", ""),
             updated_at=data.get("updated_at", ""),
         )
@@ -198,6 +227,21 @@ class RoutineService:
             update_data["color"] = routine_update.color
         if routine_update.days is not None:
             update_data["days"] = routine_update.days
+        # 프리미엄 UI 추가 필드
+        if routine_update.purpose is not None:
+            update_data["purpose"] = routine_update.purpose
+        if routine_update.space is not None:
+            update_data["space"] = routine_update.space
+        if routine_update.description is not None:
+            update_data["description"] = routine_update.description
+        if routine_update.is_flexible is not None:
+            update_data["is_flexible"] = routine_update.is_flexible
+        if routine_update.notification_time is not None:
+            update_data["notification_time"] = routine_update.notification_time
+        if routine_update.end_time is not None:
+            update_data["end_time"] = routine_update.end_time
+        if routine_update.iot_devices is not None:
+            update_data["iot_devices"] = routine_update.iot_devices
 
         # Repository를 통해 업데이트
         updated_data = self.repository.update(uid, routine_id, update_data)
@@ -213,6 +257,13 @@ class RoutineService:
             category=updated_data.get("category", ""),
             color=updated_data.get("color"),
             days=updated_data.get("days"),
+            purpose=updated_data.get("purpose"),
+            space=updated_data.get("space"),
+            description=updated_data.get("description"),
+            is_flexible=updated_data.get("is_flexible"),
+            notification_time=updated_data.get("notification_time"),
+            end_time=updated_data.get("end_time"),
+            iot_devices=updated_data.get("iot_devices"),
             created_at=updated_data.get("created_at", ""),
             updated_at=updated_data.get("updated_at", ""),
         )

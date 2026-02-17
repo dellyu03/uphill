@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 import logging
 from firebase_admin import auth
+from auth.middleware import verify_firebase_token
 
 router = APIRouter(prefix="/user", tags=["User"])
 
@@ -9,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 @router.get("/info")
-def get_user_info(uid: str):
+def get_user_info(uid: str = Depends(verify_firebase_token)):
     logger.info("=" * 60)
     logger.info("📊 사용자 정보 조회 요청 수신")
     logger.info(f"   - UID: {uid}")
