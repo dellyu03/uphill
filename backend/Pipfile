@@ -11,6 +11,7 @@ langchain-community = "*"
 ultralytics = "*"
 firebase-admin = "*"
 python-dotenv = "*"
+python-multipart = "*"
 
 [dev-packages]
 
