@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "21db3d232ba9cfaa3dd1443f5422007970364bc94e9f38cf883e1fe9fe9ae3a9"
+            "sha256": "a8b65957a833b70bd7bb86fa3a84370b78b667cfaf613062efaa69fc55450086"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -197,14 +197,6 @@
             ],
             "markers": "python_version >= '3.10'",
             "version": "==0.14.4"
-        },
-        "cachetools": {
-            "hashes": [
-                "sha256:6c09c98183bf58560c97b2abfcedcbaf6a896a490f534b031b661d3723b45ace",
-                "sha256:8e6d266b25e539df852251cfd6f990b4bc3a141db73b939058d809ebd2590fc6"
-            ],
-            "markers": "python_version >= '3.9'",
-            "version": "==6.2.2"
         },
         "certifi": {
             "hashes": [
@@ -2312,6 +2304,15 @@
             "index": "pypi",
             "markers": "python_version >= '3.9'",
             "version": "==1.2.1"
+        },
+        "python-multipart": {
+            "hashes": [
+                "sha256:2b2cd894c83d21bf49d702499531c7bafd057d730c201782048f7945d82de155",
+                "sha256:7340bef99a7e0032613f56dc36027b959fd3b30a787ed62d310e951f7c3a3a58"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '3.10'",
+            "version": "==0.0.22"
         },
         "pyyaml": {
             "hashes": [

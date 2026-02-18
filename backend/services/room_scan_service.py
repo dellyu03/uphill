@@ -72,16 +72,18 @@ class RoomScanService:
         except Exception as e:
             raise ValueError(f"유효하지 않은 이미지 데이터입니다: {e}")
 
-        # YOLO11 추론 수행 (verbose=False로 콘솔 출력 억제)
-        results = self._model(image, verbose=False)
+        # YOLO11 추론 수행 (conf=0.15로 낮춰 3D 렌더링·저조도 이미지도 감지)
+        results = self._model(image, verbose=False, conf=0.15)
 
-        # 감지된 전체 레이블 수집
+        # 감지된 전체 레이블과 confidence 수집
         detected_labels: List[str] = []
         for result in results:
             for box in result.boxes:
                 class_id = int(box.cls)
                 label = result.names[class_id]
+                confidence = float(box.conf)
                 detected_labels.append(label)
+                logger.info(f"  감지: {label} (confidence={confidence:.2f})")
 
         logger.info(f"YOLO11 감지 결과: {detected_labels}")
 
