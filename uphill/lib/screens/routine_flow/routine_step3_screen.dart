@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../constants/app_constants.dart';
 import '../../main_scaffold.dart';
 import '../../services/routine_service.dart';
 
@@ -16,9 +18,8 @@ class RoutineStep3Screen extends StatefulWidget {
   // Step 2 Data
   final bool isFlexible;
   final TimeOfDay startTime;
-  final TimeOfDay?
-  endTime; // Can be null if not flexible or not set? Actually mandatory in design but let's see. logic says mandatory.
-  final List<int> selectedDays; // Indices
+  final TimeOfDay? endTime;
+  final List<int> selectedDays;
   final String? notificationTime;
 
   const RoutineStep3Screen({
@@ -42,13 +43,67 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
   final RoutineService _routineService = RoutineService();
   bool _isSaving = false;
 
+  // AI 공간 솔루션 상태
+  bool _isLoadingSolution = true; // AI 솔루션 생성 중 여부
+  bool _isEditingSolution = false; // 솔루션 편집 모드 여부
+  String _spaceSolution = ''; // AI가 생성한 솔루션 텍스트
+  final TextEditingController _solutionController = TextEditingController();
+
   // IoT Devices State
-  // Structure: { 'type': '조명', 'value': 50 }
   final List<Map<String, dynamic>> _iotDevices = [
-    {'type': '조명', 'value': 80.0}, // Default 1 item
+    {'type': '조명', 'value': 80.0},
   ];
 
   final List<String> _deviceTypes = ['조명', '커튼', '공기청정기', '가습기', '스피커'];
+
+  @override
+  void initState() {
+    super.initState();
+    // 화면 진입 시 AI 공간 솔루션 자동 생성
+    _loadSpaceSolutionFromAI();
+  }
+
+  @override
+  void dispose() {
+    _solutionController.dispose();
+    super.dispose();
+  }
+
+  /// SharedPreferences에서 가구 목록을 로드하고 AI 솔루션을 생성합니다.
+  Future<void> _loadSpaceSolutionFromAI() async {
+    // 온보딩에서 저장된 가구 목록 로드
+    final prefs = await SharedPreferences.getInstance();
+    final detectedFurniture =
+        prefs.getStringList(StorageKeys.detectedFurniture) ?? [];
+
+    if (!mounted) return;
+
+    try {
+      // [Backend 요청] AI 공간 솔루션 생성
+      final solution = await _routineService.getSpaceSolution(
+        routineTitle: widget.routineTitle,
+        purpose: widget.purpose,
+        description: widget.description,
+        detectedFurniture: detectedFurniture,
+      );
+
+      if (mounted) {
+        setState(() {
+          _spaceSolution = solution;
+          _solutionController.text = solution;
+          _isLoadingSolution = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ AI 솔루션 로드 실패: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingSolution = false;
+          // API 호출 실패 시 빈 텍스트로 두어 사용자가 직접 입력 가능하도록 함
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +136,8 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 10),
-                    // Progress Bar (Step 3 - Full)
+
+                    // 진행 바 (3단계 - 완료)
                     Row(
                       children: [
                         Expanded(
@@ -108,8 +164,7 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Floor Plan Placeholder
-                    // Figma design shows a specific floor plan. Using a placeholder for now.
+                    // 공간 도면 영역 (Placeholder)
                     Container(
                       width: double.infinity,
                       height: 200,
@@ -128,7 +183,7 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            "공간 도면",
+                            '공간 도면',
                             style: TextStyle(color: Colors.grey[500]),
                           ),
                         ],
@@ -136,7 +191,7 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Space Solution
+                    // AI 공간 변경 솔루션 섹션
                     Text(
                       '공간 변경 솔루션',
                       style: GoogleFonts.notoSans(
@@ -145,47 +200,10 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey[200]!),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                '솔루션',
-                                style: GoogleFonts.notoSans(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const Icon(
-                                Icons.edit,
-                                size: 16,
-                                color: Colors.grey,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '침대 옆 협탁을 치우고 요가매트를 깔아보세요',
-                            style: GoogleFonts.notoSans(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    _buildSpaceSolutionCard(),
                     const SizedBox(height: 24),
 
-                    // IoT Device List
+                    // IoT 연동 섹션
                     Text(
                       'IOT 연동',
                       style: GoogleFonts.notoSans(
@@ -195,136 +213,13 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
                     ),
                     const SizedBox(height: 12),
 
+                    // IoT 기기 목록
                     ...List.generate(_iotDevices.length, (index) {
                       final device = _iotDevices[index];
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.grey[200]!),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'IOT 사물 (${index + 1})',
-                                  style: GoogleFonts.notoSans(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                if (_iotDevices.length > 1)
-                                  GestureDetector(
-                                    onTap: () => _removeIoTDevice(index),
-                                    child: const Icon(
-                                      Icons.close,
-                                      size: 18,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                SizedBox(
-                                  width: 60,
-                                  child: Text(
-                                    '사물 종류',
-                                    style: GoogleFonts.notoSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[100],
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: DropdownButtonHideUnderline(
-                                      child: DropdownButton<String>(
-                                        value: device['type'],
-                                        isExpanded: true,
-                                        items: _deviceTypes.map((type) {
-                                          return DropdownMenuItem(
-                                            value: type,
-                                            child: Text(
-                                              type,
-                                              style: GoogleFonts.notoSans(
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          );
-                                        }).toList(),
-                                        onChanged: (value) {
-                                          if (value != null) {
-                                            setState(() {
-                                              device['type'] = value;
-                                            });
-                                          }
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (device['type'] == '조명') ...[
-                              const SizedBox(height: 16),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    '밝기',
-                                    style: GoogleFonts.notoSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  Text(
-                                    '최대 밝기', // Or dynamic based on value
-                                    style: GoogleFonts.notoSans(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              SizedBox(
-                                width: double.infinity,
-                                child: CupertinoSlider(
-                                  value: device['value'] as double,
-                                  min: 0,
-                                  max: 100,
-                                  activeColor: Colors.grey[600],
-                                  thumbColor: Colors.white,
-                                  onChanged: (val) {
-                                    setState(() {
-                                      device['value'] = val;
-                                    });
-                                  },
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      );
+                      return _buildIoTDeviceCard(device, index);
                     }),
 
-                    // Add Button
+                    // IoT 연동 추가 버튼
                     GestureDetector(
                       onTap: _addIoTDevice,
                       child: Container(
@@ -333,12 +228,7 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: Colors.grey[300]!,
-                            style: BorderStyle
-                                .solid, // Dashed unsupported in standard container, using solid grey for now or custom painter if needed. keeping simple.
-                            // Actually user might want dashed. But solid grey light is okay.
-                          ),
+                          border: Border.all(color: Colors.grey[300]!),
                         ),
                         alignment: Alignment.center,
                         child: Text(
@@ -350,13 +240,13 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 100), // Bottom padding
+                    const SizedBox(height: 100),
                   ],
                 ),
               ),
             ),
 
-            // Fixed Bottom Button
+            // 하단 완료 버튼
             Padding(
               padding: const EdgeInsets.all(24.0),
               child: SizedBox(
@@ -365,9 +255,7 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
                 child: ElevatedButton(
                   onPressed: _isSaving ? null : _saveRoutine,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(
-                      0xFF383B45,
-                    ), // Dark grey from design
+                    backgroundColor: const Color(0xFF383B45),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -401,23 +289,317 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
     );
   }
 
+  /// AI가 생성한 공간 변경 솔루션 카드
+  /// 로딩 중이면 스피너, 완료 시 솔루션 텍스트 또는 편집 필드를 표시합니다.
+  Widget _buildSpaceSolutionCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 카드 헤더: 타이틀과 편집/완료 버튼
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'AI 추천 솔루션',
+                    style: GoogleFonts.notoSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (_isLoadingSolution) ...[
+                    const SizedBox(width: 8),
+                    // AI 생성 중 표시
+                    const SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Color(0xFF9CAA7D),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              // 로딩 완료 후 편집/확인 아이콘 표시
+              if (!_isLoadingSolution)
+                GestureDetector(
+                  onTap: _toggleEditMode,
+                  child: Icon(
+                    _isEditingSolution ? Icons.check_circle : Icons.edit,
+                    size: 18,
+                    color: _isEditingSolution
+                        ? const Color(0xFF9CAA7D)
+                        : Colors.grey,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // 솔루션 콘텐츠 영역
+          if (_isLoadingSolution)
+            // 로딩 중: 스켈레톤 placeholder
+            _buildSolutionLoadingPlaceholder()
+          else if (_isEditingSolution)
+            // 편집 모드: 텍스트 필드
+            _buildSolutionEditField()
+          else
+            // 표시 모드: 솔루션 텍스트
+            _buildSolutionText(),
+        ],
+      ),
+    );
+  }
+
+  /// 솔루션 로딩 중 스켈레톤 UI
+  Widget _buildSolutionLoadingPlaceholder() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'AI가 공간 솔루션을 생성하고 있습니다...',
+          style: GoogleFonts.notoSans(
+            fontSize: 13,
+            color: Colors.grey[400],
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+        const SizedBox(height: 8),
+        // 스켈레톤 바 2줄
+        Container(
+          height: 12,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(6),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          height: 12,
+          width: 200,
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(6),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 솔루션 편집 텍스트 필드
+  Widget _buildSolutionEditField() {
+    return TextField(
+      controller: _solutionController,
+      maxLines: null,
+      minLines: 3,
+      style: GoogleFonts.notoSans(fontSize: 14, color: Colors.black87),
+      decoration: InputDecoration(
+        hintText: '공간 변경 솔루션을 직접 입력해주세요',
+        hintStyle: GoogleFonts.notoSans(
+          fontSize: 14,
+          color: Colors.grey[400],
+        ),
+        filled: true,
+        fillColor: const Color(0xFFF8F8F8),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: const Color(0xFF9CAA7D), width: 1.5),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: const Color(0xFF9CAA7D), width: 1.5),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: const Color(0xFF9CAA7D), width: 2),
+        ),
+        contentPadding: const EdgeInsets.all(12),
+      ),
+    );
+  }
+
+  /// 솔루션 텍스트 표시 (읽기 모드)
+  Widget _buildSolutionText() {
+    if (_spaceSolution.isEmpty) {
+      return Text(
+        '솔루션을 생성하지 못했습니다. 편집 버튼을 눌러 직접 입력해주세요.',
+        style: GoogleFonts.notoSans(fontSize: 13, color: Colors.grey[400]),
+      );
+    }
+    return Text(
+      _spaceSolution,
+      style: GoogleFonts.notoSans(fontSize: 14, color: Colors.grey[700]),
+    );
+  }
+
+  /// IoT 기기 카드 위젯
+  Widget _buildIoTDeviceCard(Map<String, dynamic> device, int index) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 카드 헤더: 번호 + 삭제 버튼
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'IOT 사물 (${index + 1})',
+                style: GoogleFonts.notoSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (_iotDevices.length > 1)
+                GestureDetector(
+                  onTap: () => _removeIoTDevice(index),
+                  child: const Icon(Icons.close, size: 18, color: Colors.grey),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // 사물 종류 드롭다운
+          Row(
+            children: [
+              SizedBox(
+                width: 60,
+                child: Text(
+                  '사물 종류',
+                  style: GoogleFonts.notoSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: device['type'],
+                      isExpanded: true,
+                      items: _deviceTypes.map((type) {
+                        return DropdownMenuItem(
+                          value: type,
+                          child: Text(
+                            type,
+                            style: GoogleFonts.notoSans(fontSize: 14),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            device['type'] = value;
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // 조명 선택 시 밝기 슬라이더 표시
+          if (device['type'] == '조명') ...[
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '밝기',
+                  style: GoogleFonts.notoSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  '최대 밝기',
+                  style: GoogleFonts.notoSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            SizedBox(
+              width: double.infinity,
+              child: CupertinoSlider(
+                value: device['value'] as double,
+                min: 0,
+                max: 100,
+                activeColor: Colors.grey[600],
+                thumbColor: Colors.white,
+                onChanged: (val) {
+                  setState(() {
+                    device['value'] = val;
+                  });
+                },
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// 솔루션 편집 모드 토글
+  void _toggleEditMode() {
+    setState(() {
+      if (_isEditingSolution) {
+        // 편집 완료 시 수정된 텍스트 저장
+        _spaceSolution = _solutionController.text;
+      }
+      _isEditingSolution = !_isEditingSolution;
+    });
+  }
+
+  /// IoT 기기 추가
   void _addIoTDevice() {
     setState(() {
       _iotDevices.add({'type': '조명', 'value': 50.0});
     });
   }
 
+  /// IoT 기기 삭제
   void _removeIoTDevice(int index) {
     setState(() {
       _iotDevices.removeAt(index);
     });
   }
 
+  /// 루틴 저장 및 홈 화면으로 이동
   Future<void> _saveRoutine() async {
     setState(() => _isSaving = true);
 
     try {
-      // 1. Convert TimeOfDay to String HH:MM
+      // TimeOfDay → HH:MM 문자열 변환
       final startTimeStr =
           '${widget.startTime.hour.toString().padLeft(2, '0')}:${widget.startTime.minute.toString().padLeft(2, '0')}';
 
@@ -427,31 +609,30 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
             '${widget.endTime!.hour.toString().padLeft(2, '0')}:${widget.endTime!.minute.toString().padLeft(2, '0')}';
       }
 
-      // 3. Call Service
+      // [Backend 요청] 루틴 생성
       await _routineService.createRoutine(
         title: widget.routineTitle,
-        time: startTimeStr, // Main start time
-        category: '일반', // Fixed for now
-        days: widget.selectedDays, // Already List<int>
-        // Extended Fields
+        time: startTimeStr,
+        category: '일반',
+        days: widget.selectedDays,
         purpose: widget.purpose,
         space: widget.space,
         description: widget.description,
         isFlexible: widget.isFlexible,
         endTime: endTimeStr,
-        notificationTime: widget.notificationTime, // Already String?
+        notificationTime: widget.notificationTime,
         iotDevices: _iotDevices,
       );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("✅ 루틴이 생성되었습니다!"),
+            content: Text('✅ 루틴이 생성되었습니다!'),
             backgroundColor: Colors.green,
           ),
         );
 
-        // Navigate to Home/Main
+        // 홈 화면으로 이동 (이전 스택 모두 제거)
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const MainScaffold()),
@@ -459,10 +640,13 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
         );
       }
     } catch (e) {
-      debugPrint("❌ 루틴 생성 실패: $e");
+      debugPrint('❌ 루틴 생성 실패: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("루틴 생성 실패: $e"), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('루틴 생성 실패: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
         setState(() => _isSaving = false);
       }

@@ -3,7 +3,10 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import '../../constants/app_constants.dart';
+import '../../services/auth_service.dart';
 
 /// 온보딩 방 스캔 화면
 /// 카메라 미리보기를 표시하고 사진을 촬영하여 YOLO11로 가구를 분석합니다.
@@ -27,13 +30,28 @@ class _RoomScanScreenState extends State<RoomScanScreen> {
   // 감지된 가구 목록
   List<String> _detectedFurniture = [];
 
+  // 분석 완료 여부 (결과가 빈 리스트여도 API 호출이 끝나면 true)
+  bool _analysisCompleted = false;
+
   // 카메라 초기화 완료 여부
   bool _isCameraInitialized = false;
+
+  // 카메라 초기화 중복 실행 방지 플래그
+  bool _cameraInitStarted = false;
 
   @override
   void initState() {
     super.initState();
-    _initCamera();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // didChangeDependencies에서 호출해야 ModalRoute.of(context)가 올바르게 동작함
+    if (!_cameraInitStarted) {
+      _cameraInitStarted = true;
+      _initCamera();
+    }
   }
 
   @override
@@ -110,6 +128,7 @@ class _RoomScanScreenState extends State<RoomScanScreen> {
     setState(() {
       _capturedImage = null;
       _detectedFurniture = [];
+      _analysisCompleted = false;
     });
   }
 
@@ -122,17 +141,25 @@ class _RoomScanScreenState extends State<RoomScanScreen> {
     });
 
     try {
-      // TODO: 실제 서버 IP로 변경 필요 (Android 에뮬레이터: 10.0.2.2, 실제 기기: 서버 IP)
-      const baseUrl = 'http://10.0.2.2:8000';
+      // Firebase 인증 토큰 가져오기 (만료 시 자동 갱신)
+      final authService = AuthService();
+      String? authHeader = authService.getAuthHeader();
+      if (authHeader == null) {
+        await authService.refreshToken();
+        authHeader = authService.getAuthHeader();
+      }
+      if (authHeader == null) {
+        throw Exception('인증 정보가 없습니다. 다시 로그인해주세요.');
+      }
 
       // multipart/form-data로 이미지 전송
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse('$baseUrl/room-scan/analyze'),
+        Uri.parse('${ApiConstants.baseUrl}/room-scan/analyze'),
       );
 
-      // TODO: Firebase 인증 토큰 추가 필요
-      // request.headers['Authorization'] = 'Bearer $token';
+      // Firebase 인증 헤더 추가
+      request.headers['Authorization'] = authHeader;
 
       // 이미지 파일 첨부
       request.files.add(
@@ -150,6 +177,7 @@ class _RoomScanScreenState extends State<RoomScanScreen> {
         if (mounted) {
           setState(() {
             _detectedFurniture = furniture;
+            _analysisCompleted = true;
           });
         }
       } else {
@@ -158,7 +186,11 @@ class _RoomScanScreenState extends State<RoomScanScreen> {
     } catch (e) {
       debugPrint('방 스캔 분석 오류: $e');
       if (mounted) {
-        _showErrorDialog('방 분석 중 오류가 발생했습니다. 다시 시도해주세요.');
+        // 오류가 발생해도 다음으로 넘어갈 수 있도록 완료 처리
+        setState(() {
+          _analysisCompleted = true;
+        });
+        _showErrorDialog('방 분석 중 오류가 발생했습니다.\n가구 정보 없이 다음 단계로 진행합니다.');
       }
     } finally {
       if (mounted) {
@@ -253,7 +285,16 @@ class _RoomScanScreenState extends State<RoomScanScreen> {
   }
 
   /// 다음 단계(Step3 사용자 정보 입력)로 이동
-  void _goToNextStep() {
+  /// 가구 목록을 SharedPreferences에 저장한 후 이동합니다.
+  Future<void> _goToNextStep() async {
+    // 감지된 가구 목록을 SharedPreferences에 저장 (루틴 생성 시 AI 솔루션에 활용)
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      StorageKeys.detectedFurniture,
+      _detectedFurniture,
+    );
+
+    if (!mounted) return;
     Navigator.pushNamed(
       context,
       '/onboarding/step3',
@@ -311,7 +352,11 @@ class _RoomScanScreenState extends State<RoomScanScreen> {
       children: [
         // 상단 안내 텍스트
         _buildTopBar(
-          _detectedFurniture.isEmpty ? '사진을 확인해주세요' : '감지된 가구 목록',
+          !_analysisCompleted
+              ? '사진을 확인해주세요'
+              : _detectedFurniture.isEmpty
+              ? '감지된 가구가 없습니다'
+              : '감지된 가구 목록',
         ),
 
         // 촬영된 이미지 미리보기
@@ -362,8 +407,13 @@ class _RoomScanScreenState extends State<RoomScanScreen> {
           ),
         ),
 
-        // 감지된 가구 목록 (분석 완료 시)
-        if (_detectedFurniture.isNotEmpty) _buildFurnitureList(),
+        // 감지된 가구 목록 (분석 완료 + 결과 있을 때)
+        if (_analysisCompleted && _detectedFurniture.isNotEmpty)
+          _buildFurnitureList(),
+
+        // 감지 결과 없음 안내 (분석 완료 + 결과 없을 때)
+        if (_analysisCompleted && _detectedFurniture.isEmpty)
+          _buildNoFurnitureNotice(),
 
         // 하단 액션 버튼들
         _buildActionButtons(),
@@ -433,6 +483,35 @@ class _RoomScanScreenState extends State<RoomScanScreen> {
     );
   }
 
+  /// 감지된 가구가 없을 때 안내 메시지
+  Widget _buildNoFurnitureNotice() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline, color: Color(0xFF9CAA7D), size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              '가구를 감지하지 못했습니다.\n가구 정보 없이 다음 단계로 진행할 수 있어요.',
+              style: GoogleFonts.notoSansKr(
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+                color: Colors.white.withValues(alpha: 0.8),
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// 감지된 가구 목록 표시
   Widget _buildFurnitureList() {
     return Container(
@@ -496,8 +575,8 @@ class _RoomScanScreenState extends State<RoomScanScreen> {
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
       child: Column(
         children: [
-          // 분석 완료 시 "다음으로" 버튼, 미분석 시 "방 스캔하기" 버튼
-          if (_detectedFurniture.isEmpty && !_isAnalyzing)
+          // 미분석 상태: "방 스캔하기" 버튼
+          if (!_analysisCompleted && !_isAnalyzing)
             SizedBox(
               width: double.infinity,
               height: 56,
@@ -522,7 +601,8 @@ class _RoomScanScreenState extends State<RoomScanScreen> {
               ),
             ),
 
-          if (_detectedFurniture.isNotEmpty)
+          // 분석 완료 시: 결과 유무와 관계없이 "다음으로" 버튼 활성화
+          if (_analysisCompleted)
             SizedBox(
               width: double.infinity,
               height: 56,

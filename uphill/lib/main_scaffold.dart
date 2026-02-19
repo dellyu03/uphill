@@ -9,7 +9,6 @@ import 'screens/home_screen.dart';
 import 'screens/feedback_screen.dart';
 import 'screens/profile_screen.dart';
 import 'services/auth_service.dart';
-import 'screens/onboarding/login_screen.dart';
 import 'constants/app_constants.dart';
 import 'theme/app_theme.dart';
 
@@ -38,7 +37,7 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   /// 화면 목록
   late final List<Widget> _screens = [
-    HomeScreen(key: _homeKey),
+    HomeScreen(key: _homeKey, onRoutineCompleted: _onRoutineCompleted),
     FeedbackScreen(key: _feedbackKey),
     const ProfileScreen(),
   ];
@@ -132,16 +131,17 @@ class _MainScaffoldState extends State<MainScaffold> {
     );
   }
 
+  /// 루틴 완료 시 피드백 갱신 콜백
+  /// HomeScreen에서 루틴 수행 완료 시 호출됩니다.
+  void _onRoutineCompleted() {
+    _feedbackKey.currentState?.refreshFeedback();
+  }
+
   /// 네비게이션 아이템 탭 핸들러
   void _onNavItemTapped(int index) {
     // 홈탭 재탭 시 현재 시간으로 스크롤
     if (index == 0 && _currentIndex == 0) {
       _homeKey.currentState?.scrollToCurrentTime();
-    }
-
-    // 피드백 탭 전환 시 새로고침
-    if (index == 1) {
-      _feedbackKey.currentState?.refreshFeedback();
     }
 
     // 페이지 전환 애니메이션

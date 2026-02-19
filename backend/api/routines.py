@@ -5,7 +5,7 @@ HTTP 요청/응답 처리만 담당합니다.
 """
 from fastapi import APIRouter, HTTPException, Depends
 from auth.middleware import verify_firebase_token
-from api.schemas import RoutineCreate, RoutineUpdate, RoutineResponse
+from api.schemas import RoutineCreate, RoutineUpdate, RoutineResponse, SpaceSolutionRequest, SpaceSolutionResponse
 from services.routine_service import RoutineService
 from typing import List
 import logging
@@ -67,6 +67,35 @@ async def get_routines(
     except Exception as e:
         logger.error(f"❌ 루틴 조회 실패: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch routines: {str(e)}")
+
+
+@router.post("/space-solution", response_model=SpaceSolutionResponse)
+async def generate_space_solution(
+    request: SpaceSolutionRequest,
+    uid: str = Depends(verify_firebase_token)
+):
+    """
+    루틴 정보와 YOLO11로 감지된 가구 목록을 기반으로 AI 공간 배치 솔루션을 생성합니다.
+
+    Args:
+        request: 루틴 제목, 목적, 추구하는 환경/활동, 감지된 가구 목록
+        uid: 인증된 사용자의 uid (미들웨어에서 자동 추출)
+
+    Returns:
+        SpaceSolutionResponse: AI가 생성한 공간 변경 솔루션 텍스트
+    """
+    try:
+        solution = routine_service.get_space_solution(
+            routine_title=request.routine_title,
+            purpose=request.purpose,
+            description=request.description,
+            detected_furniture=request.detected_furniture,
+        )
+        return SpaceSolutionResponse(solution=solution)
+
+    except Exception as e:
+        logger.error(f"❌ 공간 솔루션 생성 실패: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate space solution: {str(e)}")
 
 
 @router.get("/{routine_id}", response_model=RoutineResponse)

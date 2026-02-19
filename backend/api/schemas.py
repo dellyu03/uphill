@@ -58,6 +58,21 @@ class RoutineResponse(BaseModel):
     updated_at: str
 
 
+# ===== AI 공간 솔루션 스키마 =====
+
+class SpaceSolutionRequest(BaseModel):
+    """AI 공간 솔루션 생성 요청 스키마"""
+    routine_title: str
+    purpose: str
+    description: str
+    detected_furniture: List[str]
+
+
+class SpaceSolutionResponse(BaseModel):
+    """AI 공간 솔루션 생성 응답 스키마"""
+    solution: str
+
+
 # ===== 루틴 수행 기록 스키마 =====
 
 class ExecutionCreate(BaseModel):

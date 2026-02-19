@@ -2,6 +2,7 @@ import os
 import json
 import logging
 from pathlib import Path
+from typing import List
 from dotenv import load_dotenv
 from openai import OpenAI
 from api.schemas import DailySummaryResponse
@@ -118,6 +119,74 @@ def generate_ai_feedback(summary: DailySummaryResponse) -> dict:
         logger.error(f"❌ OpenAI API 호출 실패: {e}")
         # 폴백: 기본 피드백 반환
         return generate_fallback_feedback(summary)
+
+
+def generate_space_solution(
+    routine_title: str,
+    purpose: str,
+    description: str,
+    detected_furniture: List[str],
+) -> str:
+    """
+    루틴 정보와 YOLO11로 감지된 가구 목록을 기반으로 OpenAI API를 사용해
+    공간 배치 최적화 솔루션을 생성합니다.
+
+    Args:
+        routine_title: 루틴 이름
+        purpose: 루틴 목적 (예: 운동, 독서, 명상)
+        description: 추구하는 환경과 활동 설명
+        detected_furniture: YOLO11로 감지된 가구 목록 (예: ["침대", "책상", "의자"])
+
+    Returns:
+        str: AI가 생성한 공간 변경 솔루션 텍스트 (2-3문장)
+    """
+    system_prompt = (
+        "당신은 공간 최적화 전문가입니다. "
+        "사용자의 루틴 정보와 현재 공간의 가구 배치를 분석하여, "
+        "루틴을 더 효율적으로 수행할 수 있는 구체적인 공간 변경 솔루션을 제안합니다. "
+        "실용적이고 실행 가능한 제안을 2-3문장으로 간결하게 작성하세요."
+    )
+
+    furniture_text = ", ".join(detected_furniture) if detected_furniture else "감지된 가구 없음"
+
+    user_prompt = (
+        f"루틴 이름: {routine_title}\n"
+        f"루틴 목적: {purpose}\n"
+        f"추구하는 환경/활동: {description}\n"
+        f"현재 공간의 가구: {furniture_text}\n\n"
+        "위 정보를 바탕으로 이 루틴을 위한 최적의 공간 변경 솔루션을 한국어로 작성해주세요."
+    )
+
+    try:
+        client = get_openai_client()
+
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.7,
+            max_tokens=300,
+        )
+
+        solution = response.choices[0].message.content.strip()
+        logger.info(f"✅ 공간 솔루션 생성 성공: {solution[:50]}...")
+        return solution
+
+    except Exception as e:
+        logger.error(f"❌ 공간 솔루션 OpenAI 호출 실패: {e}")
+        # 폴백: 가구 정보 기반 기본 솔루션 반환
+        if detected_furniture:
+            return (
+                f"{furniture_text} 중 루틴에 필요한 동선을 확보해주세요. "
+                f"{purpose} 활동에 적합하도록 공간을 정리하고, "
+                "방해 요소가 되는 물건은 한쪽으로 치워두세요."
+            )
+        return (
+            f"{purpose} 루틴을 위해 충분한 활동 공간을 확보해주세요. "
+            "불필요한 물건을 정리하고 루틴에 집중할 수 있는 환경을 만들어보세요."
+        )
 
 
 def generate_fallback_feedback(summary: DailySummaryResponse) -> dict:

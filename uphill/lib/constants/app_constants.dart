@@ -27,6 +27,10 @@ class ApiConstants {
   static const String authGoogle = '/auth/google';
   static const String routines = '/routines';
   static const String executions = '/executions';
+  static const String roomScanAnalyze = '/room-scan/analyze';
+
+  /// AI 공간 솔루션 생성 엔드포인트
+  static const String spaceSolution = '/routines/space-solution';
 }
 
 /// 레이아웃 관련 상수
@@ -114,4 +118,7 @@ class StorageKeys {
   static const String customToken = 'custom_token';
   static const String uid = 'uid';
   static const String userInfo = 'user_info';
+
+  /// 온보딩 방 스캔에서 감지된 가구 목록 (JSON 문자열 배열)
+  static const String detectedFurniture = 'detected_furniture';
 }

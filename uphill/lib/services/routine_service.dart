@@ -395,6 +395,50 @@ class RoutineService {
     }
   }
 
+  /// AI 공간 솔루션 생성
+  /// [Backend 요청] POST /routines/space-solution
+  /// 루틴 정보와 YOLO11로 감지된 가구 목록을 기반으로 AI가 공간 배치 솔루션을 생성합니다.
+  Future<String> getSpaceSolution({
+    required String routineTitle,
+    required String purpose,
+    required String description,
+    required List<String> detectedFurniture,
+  }) async {
+    try {
+      final authHeader = _authService.getAuthHeader();
+      if (authHeader == null) {
+        throw Exception(TextConstants.loginRequired);
+      }
+
+      // [Backend 요청] AI 공간 솔루션 생성
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}${ApiConstants.spaceSolution}'),
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'routine_title': routineTitle,
+          'purpose': purpose,
+          'description': description,
+          'detected_furniture': detectedFurniture,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return data['solution'] as String;
+      } else if (response.statusCode == 401) {
+        throw Exception(TextConstants.authExpired);
+      } else {
+        throw Exception('솔루션 생성 실패: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('❌ 공간 솔루션 생성 에러: $e');
+      rethrow;
+    }
+  }
+
   /// 루틴 단건 조회
   /// [Backend 요청] GET /routines/{id}
   Future<Map<String, dynamic>> getRoutine(String routineId) async {

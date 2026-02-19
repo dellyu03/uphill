@@ -19,7 +19,10 @@ import '../services/auth_service.dart';
 /// 홈 화면 위젯
 /// 시간대별 루틴 타임라인을 표시합니다.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  /// 루틴 수행 완료 시 호출되는 콜백 (피드백 갱신용)
+  final VoidCallback? onRoutineCompleted;
+
+  const HomeScreen({super.key, this.onRoutineCompleted});
 
   @override
   State<HomeScreen> createState() => HomeScreenState();
@@ -298,8 +301,9 @@ class HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.only(top: 16),
       child: ProgressBanner(
         routineTitle: activeRoutine['title'] as String,
-        onPlayTap: () {
-          Navigator.push(
+        onPlayTap: () async {
+          // 루틴 수행 화면에서 완료(true) 시 피드백 갱신 콜백 호출
+          final completed = await Navigator.push<bool>(
             context,
             MaterialPageRoute(
               builder: (context) => RoutineInProgressScreen(
@@ -307,7 +311,10 @@ class HomeScreenState extends State<HomeScreen> {
                 title: activeRoutine['title'] as String,
               ),
             ),
-          ).then((_) => _loadRoutines());
+          );
+          if (completed == true) {
+            widget.onRoutineCompleted?.call();
+          }
         },
       ),
     );
@@ -507,7 +514,7 @@ class HomeScreenState extends State<HomeScreen> {
 
   /// 루틴 카드 탭 핸들러
   void _onRoutineCardTapped(Map<String, dynamic> routine) {
-    Navigator.push(
+    Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (context) => RoutineDetailScreen(
@@ -516,9 +523,9 @@ class HomeScreenState extends State<HomeScreen> {
           timeRange: '${routine['start']} - ${routine['end']}',
         ),
       ),
-    ).then((_) {
-      // 상세 화면에서 돌아온 후 목록 새로고침
-      _loadRoutines();
+    ).then((changed) {
+      // 수정/삭제가 실제로 발생했을 때만 목록 새로고침
+      if (changed == true) _loadRoutines();
     });
   }
 

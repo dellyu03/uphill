@@ -6,6 +6,7 @@ from typing import List, Optional
 from datetime import datetime
 from repositories.routine_repository import FirestoreRoutineRepository
 from api.schemas import RoutineCreate, RoutineUpdate, RoutineResponse
+from services.ai_feedback import generate_space_solution
 import logging
 
 logger = logging.getLogger(__name__)
@@ -266,6 +267,33 @@ class RoutineService:
             iot_devices=updated_data.get("iot_devices"),
             created_at=updated_data.get("created_at", ""),
             updated_at=updated_data.get("updated_at", ""),
+        )
+
+    def get_space_solution(
+        self,
+        routine_title: str,
+        purpose: str,
+        description: str,
+        detected_furniture: List[str],
+    ) -> str:
+        """
+        루틴 정보와 감지된 가구 목록을 기반으로 AI 공간 배치 솔루션을 생성합니다.
+
+        Args:
+            routine_title: 루틴 이름
+            purpose: 루틴 목적 (예: 운동, 독서, 명상)
+            description: 추구하는 환경과 활동 설명
+            detected_furniture: YOLO11로 감지된 가구 목록
+
+        Returns:
+            str: AI가 생성한 공간 변경 솔루션 텍스트
+        """
+        logger.info(f"🏠 공간 솔루션 생성 요청 - 루틴: {routine_title}, 가구: {detected_furniture}")
+        return generate_space_solution(
+            routine_title=routine_title,
+            purpose=purpose,
+            description=description,
+            detected_furniture=detected_furniture,
         )
 
     def delete_routine(self, uid: str, routine_id: str) -> bool:
