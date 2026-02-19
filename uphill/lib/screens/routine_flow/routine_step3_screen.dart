@@ -44,9 +44,10 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
   bool _isSaving = false;
 
   // AI 공간 솔루션 상태
-  bool _isLoadingSolution = true; // AI 솔루션 생성 중 여부
+  bool _isLoadingSolution = true; // AI 솔루션 + 평면도 생성 중 여부
   bool _isEditingSolution = false; // 솔루션 편집 모드 여부
   String _spaceSolution = ''; // AI가 생성한 솔루션 텍스트
+  String? _floorPlanImageUrl; // DALL-E 3가 생성한 평면도 이미지 URL
   final TextEditingController _solutionController = TextEditingController();
 
   // IoT Devices State
@@ -79,8 +80,8 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
     if (!mounted) return;
 
     try {
-      // [Backend 요청] AI 공간 솔루션 생성
-      final solution = await _routineService.getSpaceSolution(
+      // [Backend 요청] AI 공간 솔루션 + DALL-E 3 평면도 생성
+      final result = await _routineService.getSpaceSolution(
         routineTitle: widget.routineTitle,
         purpose: widget.purpose,
         description: widget.description,
@@ -89,8 +90,9 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
 
       if (mounted) {
         setState(() {
-          _spaceSolution = solution;
-          _solutionController.text = solution;
+          _spaceSolution = result['solution'] as String? ?? '';
+          _floorPlanImageUrl = result['floor_plan_image_url'] as String?;
+          _solutionController.text = _spaceSolution;
           _isLoadingSolution = false;
         });
       }
@@ -164,31 +166,8 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // 공간 도면 영역 (Placeholder)
-                    Container(
-                      width: double.infinity,
-                      height: 200,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        border: Border.all(color: Colors.grey[300]!),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.apartment,
-                            size: 60,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '공간 도면',
-                            style: TextStyle(color: Colors.grey[500]),
-                          ),
-                        ],
-                      ),
-                    ),
+                    // 공간 평면도 영역: 로딩 중 / 이미지 / 실패 placeholder
+                    _buildFloorPlanSection(),
                     const SizedBox(height: 24),
 
                     // AI 공간 변경 솔루션 섹션
@@ -357,6 +336,92 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
           else
             // 표시 모드: 솔루션 텍스트
             _buildSolutionText(),
+        ],
+      ),
+    );
+  }
+
+  /// 공간 평면도 섹션: 로딩 중 / DALL-E 이미지 / 실패 placeholder 표시
+  Widget _buildFloorPlanSection() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: SizedBox(
+        width: double.infinity,
+        height: 220,
+        child: _isLoadingSolution
+            // 로딩 중: 그레이 배경 + 스피너
+            ? Container(
+                color: Colors.grey[200],
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(
+                        width: 28,
+                        height: 28,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Color(0xFF9CAA7D),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'AI가 평면도를 생성 중입니다...',
+                        style: GoogleFonts.notoSans(
+                          fontSize: 13,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : _floorPlanImageUrl != null
+                // 이미지 로드 성공
+                ? Image.network(
+                    _floorPlanImageUrl!,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        color: Colors.grey[200],
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              Color(0xFF9CAA7D),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) =>
+                        _buildFloorPlanPlaceholder(),
+                  )
+                // 이미지 생성 실패 시 placeholder
+                : _buildFloorPlanPlaceholder(),
+      ),
+    );
+  }
+
+  /// 평면도 이미지 로드 실패 시 placeholder
+  Widget _buildFloorPlanPlaceholder() {
+    return Container(
+      color: Colors.grey[200],
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.map_outlined, size: 48, color: Colors.grey[400]),
+          const SizedBox(height: 8),
+          Text(
+            '공간 도면',
+            style: GoogleFonts.notoSans(fontSize: 13, color: Colors.grey[500]),
+          ),
         ],
       ),
     );
@@ -609,7 +674,7 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
             '${widget.endTime!.hour.toString().padLeft(2, '0')}:${widget.endTime!.minute.toString().padLeft(2, '0')}';
       }
 
-      // [Backend 요청] 루틴 생성
+      // [Backend 요청] 루틴 생성 (AI 공간 솔루션 + 평면도 URL 포함)
       await _routineService.createRoutine(
         title: widget.routineTitle,
         time: startTimeStr,
@@ -622,6 +687,8 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
         endTime: endTimeStr,
         notificationTime: widget.notificationTime,
         iotDevices: _iotDevices,
+        spaceSolution: _spaceSolution.isNotEmpty ? _spaceSolution : null,
+        floorPlanImageUrl: _floorPlanImageUrl,
       );
 
       if (mounted) {

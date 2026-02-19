@@ -2,7 +2,7 @@ import os
 import json
 import logging
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from dotenv import load_dotenv
 from openai import OpenAI
 from api.schemas import DailySummaryResponse
@@ -19,6 +19,9 @@ _openai_client = None
 PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
 SYSTEM_PROMPT_FILE = PROMPTS_DIR / "feedback_system_prompt.txt"
 USER_PROMPT_TEMPLATE_FILE = PROMPTS_DIR / "feedback_user_prompt_template.txt"
+SPACE_SOLUTION_SYSTEM_PROMPT_FILE = PROMPTS_DIR / "space_solution_system_prompt.txt"
+SPACE_SOLUTION_USER_PROMPT_TEMPLATE_FILE = PROMPTS_DIR / "space_solution_user_prompt_template.txt"
+FLOOR_PLAN_PROMPT_TEMPLATE_FILE = PROMPTS_DIR / "floor_plan_prompt_template.txt"
 
 
 def get_openai_client() -> OpenAI:
@@ -126,10 +129,10 @@ def generate_space_solution(
     purpose: str,
     description: str,
     detected_furniture: List[str],
-) -> str:
+) -> dict:
     """
     루틴 정보와 YOLO11로 감지된 가구 목록을 기반으로 OpenAI API를 사용해
-    공간 배치 최적화 솔루션을 생성합니다.
+    공간 배치 최적화 솔루션 텍스트와 DALL-E 3 평면도 이미지 URL을 함께 생성합니다.
 
     Args:
         routine_title: 루틴 이름
@@ -138,25 +141,36 @@ def generate_space_solution(
         detected_furniture: YOLO11로 감지된 가구 목록 (예: ["침대", "책상", "의자"])
 
     Returns:
-        str: AI가 생성한 공간 변경 솔루션 텍스트 (2-3문장)
+        dict: {
+            "solution": AI가 생성한 공간 변경 솔루션 텍스트,
+            "floor_plan_image_url": DALL-E 3 생성 평면도 이미지 URL (실패 시 None)
+        }
     """
-    system_prompt = (
-        "당신은 공간 최적화 전문가입니다. "
-        "사용자의 루틴 정보와 현재 공간의 가구 배치를 분석하여, "
-        "루틴을 더 효율적으로 수행할 수 있는 구체적인 공간 변경 솔루션을 제안합니다. "
-        "실용적이고 실행 가능한 제안을 2-3문장으로 간결하게 작성하세요."
-    )
+    # 프롬프트 파일 로드
+    system_prompt = load_prompt(SPACE_SOLUTION_SYSTEM_PROMPT_FILE)
+    user_prompt_template = load_prompt(SPACE_SOLUTION_USER_PROMPT_TEMPLATE_FILE)
 
     furniture_text = ", ".join(detected_furniture) if detected_furniture else "감지된 가구 없음"
 
-    user_prompt = (
-        f"루틴 이름: {routine_title}\n"
-        f"루틴 목적: {purpose}\n"
-        f"추구하는 환경/활동: {description}\n"
-        f"현재 공간의 가구: {furniture_text}\n\n"
-        "위 정보를 바탕으로 이 루틴을 위한 최적의 공간 변경 솔루션을 한국어로 작성해주세요."
+    user_prompt = user_prompt_template.format(
+        routine_title=routine_title,
+        purpose=purpose,
+        description=description,
+        furniture_text=furniture_text,
     )
 
+    # 폴백 솔루션 텍스트 (GPT 실패 시)
+    fallback_solution = (
+        f"{furniture_text} 중 루틴에 필요한 동선을 확보해주세요. "
+        f"{purpose} 활동에 적합하도록 공간을 정리하고, "
+        "방해 요소가 되는 물건은 한쪽으로 치워두세요."
+    ) if detected_furniture else (
+        f"{purpose} 루틴을 위해 충분한 활동 공간을 확보해주세요. "
+        "불필요한 물건을 정리하고 루틴에 집중할 수 있는 환경을 만들어보세요."
+    )
+
+    # Step 1. GPT로 솔루션 텍스트 생성
+    solution = fallback_solution
     try:
         client = get_openai_client()
 
@@ -167,26 +181,70 @@ def generate_space_solution(
                 {"role": "user", "content": user_prompt},
             ],
             temperature=0.7,
-            max_tokens=300,
+            max_tokens=400,
         )
 
         solution = response.choices[0].message.content.strip()
         logger.info(f"✅ 공간 솔루션 생성 성공: {solution[:50]}...")
-        return solution
 
     except Exception as e:
-        logger.error(f"❌ 공간 솔루션 OpenAI 호출 실패: {e}")
-        # 폴백: 가구 정보 기반 기본 솔루션 반환
-        if detected_furniture:
-            return (
-                f"{furniture_text} 중 루틴에 필요한 동선을 확보해주세요. "
-                f"{purpose} 활동에 적합하도록 공간을 정리하고, "
-                "방해 요소가 되는 물건은 한쪽으로 치워두세요."
-            )
-        return (
-            f"{purpose} 루틴을 위해 충분한 활동 공간을 확보해주세요. "
-            "불필요한 물건을 정리하고 루틴에 집중할 수 있는 환경을 만들어보세요."
+        logger.error(f"❌ 공간 솔루션 GPT 호출 실패: {e}")
+
+    # Step 2. DALL-E 3로 평면도 이미지 생성
+    floor_plan_image_url = generate_floor_plan_image(
+        purpose=purpose,
+        furniture_text=furniture_text,
+        solution_summary=solution[:200],  # 프롬프트 길이 제한을 위해 요약
+    )
+
+    return {
+        "solution": solution,
+        "floor_plan_image_url": floor_plan_image_url,
+    }
+
+
+def generate_floor_plan_image(
+    purpose: str,
+    furniture_text: str,
+    solution_summary: str,
+) -> Optional[str]:
+    """
+    DALL-E 3 API를 사용하여 공간 솔루션 기반 평면도 이미지를 생성합니다.
+
+    Args:
+        purpose: 루틴 목적
+        furniture_text: 감지된 가구 목록 텍스트
+        solution_summary: 공간 솔루션 요약 (200자 이내)
+
+    Returns:
+        Optional[str]: DALL-E 3가 생성한 이미지 URL (실패 시 None)
+                       주의: 이미지 URL은 약 1시간 후 만료됩니다.
+    """
+    try:
+        client = get_openai_client()
+
+        prompt_template = load_prompt(FLOOR_PLAN_PROMPT_TEMPLATE_FILE)
+        image_prompt = prompt_template.format(
+            purpose=purpose,
+            furniture_text=furniture_text,
+            solution_summary=solution_summary,
         )
+
+        response = client.images.generate(
+            model="dall-e-3",
+            prompt=image_prompt,
+            size="1024x1024",
+            quality="standard",
+            n=1,
+        )
+
+        image_url = response.data[0].url
+        logger.info(f"✅ 평면도 이미지 생성 성공")
+        return image_url
+
+    except Exception as e:
+        logger.error(f"❌ DALL-E 3 평면도 생성 실패: {e}")
+        return None
 
 
 def generate_fallback_feedback(summary: DailySummaryResponse) -> dict:

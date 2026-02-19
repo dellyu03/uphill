@@ -1,0 +1,4 @@
+A clean and simple 2D top-view floor plan of a room for a {purpose} routine.
+Room furniture: {furniture_text}.
+Recommended arrangement based on: {solution_summary}.
+Style: minimalist architectural illustration, white background, light gray room boundary walls, furniture drawn as simple labeled rectangles with Korean text, no shadows, no decorations, bird's eye view.

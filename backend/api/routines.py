@@ -85,13 +85,16 @@ async def generate_space_solution(
         SpaceSolutionResponse: AI가 생성한 공간 변경 솔루션 텍스트
     """
     try:
-        solution = routine_service.get_space_solution(
+        result = routine_service.get_space_solution(
             routine_title=request.routine_title,
             purpose=request.purpose,
             description=request.description,
             detected_furniture=request.detected_furniture,
         )
-        return SpaceSolutionResponse(solution=solution)
+        return SpaceSolutionResponse(
+            solution=result["solution"],
+            floor_plan_image_url=result.get("floor_plan_image_url"),
+        )
 
     except Exception as e:
         logger.error(f"❌ 공간 솔루션 생성 실패: {e}")

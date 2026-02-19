@@ -84,6 +84,9 @@ class RoutineService:
             "notification_time": routine.notification_time,
             "end_time": routine.end_time,
             "iot_devices": routine.iot_devices,
+            # AI 공간 솔루션 및 평면도
+            "space_solution": routine.space_solution,
+            "floor_plan_image_url": routine.floor_plan_image_url,
             "created_at": now_str,
             "updated_at": now_str,
         }
@@ -106,6 +109,8 @@ class RoutineService:
             notification_time=routine.notification_time,
             end_time=routine.end_time,
             iot_devices=routine.iot_devices,
+            space_solution=routine.space_solution,
+            floor_plan_image_url=routine.floor_plan_image_url,
             created_at=now_str,
             updated_at=now_str,
         )
@@ -142,6 +147,8 @@ class RoutineService:
                 notification_time=data.get("notification_time"),
                 end_time=data.get("end_time"),
                 iot_devices=data.get("iot_devices"),
+                space_solution=data.get("space_solution"),
+                floor_plan_image_url=data.get("floor_plan_image_url"),
                 created_at=data.get("created_at", ""),
                 updated_at=data.get("updated_at", ""),
             )
@@ -186,6 +193,8 @@ class RoutineService:
             notification_time=data.get("notification_time"),
             end_time=data.get("end_time"),
             iot_devices=data.get("iot_devices"),
+            space_solution=data.get("space_solution"),
+            floor_plan_image_url=data.get("floor_plan_image_url"),
             created_at=data.get("created_at", ""),
             updated_at=data.get("updated_at", ""),
         )
@@ -265,6 +274,8 @@ class RoutineService:
             notification_time=updated_data.get("notification_time"),
             end_time=updated_data.get("end_time"),
             iot_devices=updated_data.get("iot_devices"),
+            space_solution=updated_data.get("space_solution"),
+            floor_plan_image_url=updated_data.get("floor_plan_image_url"),
             created_at=updated_data.get("created_at", ""),
             updated_at=updated_data.get("updated_at", ""),
         )
@@ -275,9 +286,10 @@ class RoutineService:
         purpose: str,
         description: str,
         detected_furniture: List[str],
-    ) -> str:
+    ) -> dict:
         """
-        루틴 정보와 감지된 가구 목록을 기반으로 AI 공간 배치 솔루션을 생성합니다.
+        루틴 정보와 감지된 가구 목록을 기반으로 AI 공간 배치 솔루션 텍스트와
+        DALL-E 3 평면도 이미지 URL을 생성합니다.
 
         Args:
             routine_title: 루틴 이름
@@ -286,7 +298,7 @@ class RoutineService:
             detected_furniture: YOLO11로 감지된 가구 목록
 
         Returns:
-            str: AI가 생성한 공간 변경 솔루션 텍스트
+            dict: {"solution": 솔루션 텍스트, "floor_plan_image_url": 이미지 URL or None}
         """
         logger.info(f"🏠 공간 솔루션 생성 요청 - 루틴: {routine_title}, 가구: {detected_furniture}")
         return generate_space_solution(

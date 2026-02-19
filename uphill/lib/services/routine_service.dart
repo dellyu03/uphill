@@ -144,8 +144,11 @@ class RoutineService {
     String? description,
     bool? isFlexible,
     String? notificationTime,
-    String? endTime, // 지속 시간 종료
-    List<Map<String, dynamic>>? iotDevices, // IOT 장비 설정
+    String? endTime,
+    List<Map<String, dynamic>>? iotDevices,
+    // AI 공간 솔루션 및 평면도
+    String? spaceSolution,
+    String? floorPlanImageUrl,
   }) async {
     try {
       final authHeader = _authService.getAuthHeader();
@@ -154,18 +157,21 @@ class RoutineService {
       }
 
       // [Backend 요청] 루틴 생성
-      // 백엔드가 아직 새 필드를 지원하지 않을 수 있으므로,
-      // 지원하는 필드만 보내거나, 필요시 'meta' 필드 등에 담아서 보낼 수 있음.
-      // 여기서는 일단 기존 필드 + 가능한 필드만 전송한다고 가정.
       final body = {
         'title': title,
         'time': time,
         'category': category,
         if (color != null) 'color': color,
         if (days != null) 'days': days,
-        // 필요시 백엔드 스펙에 맞춰 추가전송
         if (purpose != null) 'purpose': purpose,
         if (space != null) 'space': space,
+        if (description != null) 'description': description,
+        if (isFlexible != null) 'is_flexible': isFlexible,
+        if (notificationTime != null) 'notification_time': notificationTime,
+        if (endTime != null) 'end_time': endTime,
+        if (iotDevices != null) 'iot_devices': iotDevices,
+        if (spaceSolution != null) 'space_solution': spaceSolution,
+        if (floorPlanImageUrl != null) 'floor_plan_image_url': floorPlanImageUrl,
       };
 
       final response = await http.post(
@@ -395,10 +401,11 @@ class RoutineService {
     }
   }
 
-  /// AI 공간 솔루션 생성
+  /// AI 공간 솔루션 및 DALL-E 3 평면도 이미지 생성
   /// [Backend 요청] POST /routines/space-solution
-  /// 루틴 정보와 YOLO11로 감지된 가구 목록을 기반으로 AI가 공간 배치 솔루션을 생성합니다.
-  Future<String> getSpaceSolution({
+  /// 루틴 정보와 YOLO11로 감지된 가구 목록을 기반으로 AI 솔루션과 평면도를 함께 생성합니다.
+  /// 반환값: { 'solution': String, 'floor_plan_image_url': String? }
+  Future<Map<String, dynamic>> getSpaceSolution({
     required String routineTitle,
     required String purpose,
     required String description,
@@ -410,7 +417,7 @@ class RoutineService {
         throw Exception(TextConstants.loginRequired);
       }
 
-      // [Backend 요청] AI 공간 솔루션 생성
+      // [Backend 요청] AI 공간 솔루션 + DALL-E 3 평면도 생성
       final response = await http.post(
         Uri.parse('${ApiConstants.baseUrl}${ApiConstants.spaceSolution}'),
         headers: {
@@ -426,8 +433,7 @@ class RoutineService {
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        return data['solution'] as String;
+        return jsonDecode(response.body) as Map<String, dynamic>;
       } else if (response.statusCode == 401) {
         throw Exception(TextConstants.authExpired);
       } else {

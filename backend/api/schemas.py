@@ -18,6 +18,8 @@ class RoutineCreate(BaseModel):
     notification_time: Optional[str] = None  # 알림 시간
     end_time: Optional[str] = None  # 종료 시간 (HH:MM)
     iot_devices: Optional[List[dict]] = None  # IoT 기기 설정
+    space_solution: Optional[str] = None       # AI 생성 공간 솔루션 텍스트
+    floor_plan_image_url: Optional[str] = None # DALL-E 3 생성 평면도 이미지 URL
 
 
 class RoutineUpdate(BaseModel):
@@ -54,6 +56,8 @@ class RoutineResponse(BaseModel):
     notification_time: Optional[str] = None
     end_time: Optional[str] = None
     iot_devices: Optional[List[dict]] = None
+    space_solution: Optional[str] = None       # AI 생성 공간 솔루션 텍스트
+    floor_plan_image_url: Optional[str] = None # DALL-E 3 생성 평면도 이미지 URL
     created_at: str
     updated_at: str
 
@@ -71,6 +75,7 @@ class SpaceSolutionRequest(BaseModel):
 class SpaceSolutionResponse(BaseModel):
     """AI 공간 솔루션 생성 응답 스키마"""
     solution: str
+    floor_plan_image_url: Optional[str] = None  # DALL-E 3 생성 평면도 이미지 URL
 
 
 # ===== 루틴 수행 기록 스키마 =====

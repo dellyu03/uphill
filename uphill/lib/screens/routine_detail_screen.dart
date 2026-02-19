@@ -58,6 +58,8 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
           final description = data['description'] ?? '설명이 없습니다.';
           final space = data['space'] ?? '설정되지 않음';
           final days = List<int>.from(data['days'] ?? []);
+          final spaceSolution = data['space_solution'] as String?;
+          final floorPlanImageUrl = data['floor_plan_image_url'] as String?;
 
           final startTime = data['time'] ?? '00:00';
           final endTime = data['end_time'] ?? '00:00';
@@ -130,8 +132,8 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
 
                     const SizedBox(height: 48),
 
-                    // 3. Visual Section (Image + Graphics)
-                    _buildVisualSection(),
+                    // 3. 공간 평면도 섹션
+                    _buildVisualSection(floorPlanImageUrl),
 
                     const SizedBox(height: 40),
 
@@ -162,10 +164,10 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
 
                     const SizedBox(height: 20),
 
-                    // 5. Solution Card
+                    // 5. 공간 솔루션 카드
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 18.0),
-                      child: _buildSolutionCard(),
+                      child: _buildSolutionCard(spaceSolution),
                     ),
 
                     const SizedBox(height: 20),
@@ -357,15 +359,17 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
     );
   }
 
-  Widget _buildVisualSection() {
+  /// 공간 평면도 이미지 섹션
+  /// DALL-E 3가 생성한 이미지 URL이 있으면 표시, 없으면 placeholder
+  Widget _buildVisualSection(String? floorPlanImageUrl) {
     return SizedBox(
-      height: 350,
+      height: 300,
       child: Center(
         child: Container(
           width: 291,
           height: 253,
           decoration: BoxDecoration(
-            color: const Color(0xFFF5F5F5), // Light grey placeholder
+            color: const Color(0xFFF5F5F5),
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
@@ -375,29 +379,54 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
               ),
             ],
           ),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.image_not_supported_outlined,
-                  size: 40,
-                  color: Colors.grey[400],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '이미지 준비중',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                ),
-              ],
-            ),
-          ),
+          clipBehavior: Clip.antiAlias,
+          child: floorPlanImageUrl != null
+              // DALL-E 3 평면도 이미지
+              ? Image.network(
+                  floorPlanImageUrl,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Color(0xFF9CAA7D),
+                        ),
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) =>
+                      _buildFloorPlanPlaceholder(),
+                )
+              // 이미지 없음 (온보딩 가구 미스캔 or 생성 실패)
+              : _buildFloorPlanPlaceholder(),
         ),
       ),
     );
   }
 
-  Widget _buildSolutionCard() {
+  /// 평면도 없을 때 표시하는 placeholder
+  Widget _buildFloorPlanPlaceholder() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.map_outlined, size: 40, color: Colors.grey[400]),
+        const SizedBox(height: 8),
+        Text(
+          '공간 도면',
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+        ),
+      ],
+    );
+  }
+
+  /// 공간 솔루션 카드
+  /// AI가 생성한 솔루션 텍스트를 표시합니다.
+  Widget _buildSolutionCard(String? spaceSolution) {
+    final solutionText = (spaceSolution != null && spaceSolution.isNotEmpty)
+        ? spaceSolution
+        : '공간 솔루션이 없습니다.';
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -414,8 +443,8 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text(
+        children: [
+          const Text(
             '공간 변경 루틴 솔루션',
             style: TextStyle(
               fontSize: 16,
@@ -423,10 +452,10 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
               color: Color(0xFF171717),
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            '더욱 원활한 운동을 위해 침대 앞 협탁을 책상 쪽으로 치우고, 요가 매트를 깔아 보세요.',
-            style: TextStyle(
+            solutionText,
+            style: const TextStyle(
               fontSize: 15,
               height: 1.5,
               color: Color.fromRGBO(0, 0, 0, 0.6),
