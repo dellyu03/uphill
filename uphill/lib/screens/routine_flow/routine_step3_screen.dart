@@ -1,6 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../constants/app_constants.dart';
@@ -659,6 +662,35 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
     });
   }
 
+  /// DALL-E 임시 URL에서 이미지를 다운받아 Firebase Storage에 영구 저장합니다.
+  /// DALL-E URL은 약 1시간 후 만료되므로 Firebase Storage에 재업로드합니다.
+  /// 업로드 성공 시 영구 다운로드 URL을 반환하고, 실패 시 null을 반환합니다.
+  Future<String?> _uploadFloorPlanToStorage(String dalleUrl) async {
+    try {
+      // DALL-E URL에서 이미지 바이트 다운로드
+      final response = await http.get(Uri.parse(dalleUrl));
+      if (response.statusCode != 200) return null;
+
+      // 현재 로그인 사용자 UID 및 파일명 생성
+      final uid = FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('floor_plans/$uid/$timestamp.jpg');
+
+      // Firebase Storage에 이미지 업로드 (영구 저장)
+      final uploadTask = await storageRef.putData(
+        response.bodyBytes,
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
+
+      return await uploadTask.ref.getDownloadURL();
+    } catch (e) {
+      debugPrint('❌ 평면도 Firebase Storage 업로드 실패: $e');
+      return null;
+    }
+  }
+
   /// 루틴 저장 및 홈 화면으로 이동
   Future<void> _saveRoutine() async {
     setState(() => _isSaving = true);
@@ -674,7 +706,13 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
             '${widget.endTime!.hour.toString().padLeft(2, '0')}:${widget.endTime!.minute.toString().padLeft(2, '0')}';
       }
 
-      // [Backend 요청] 루틴 생성 (AI 공간 솔루션 + 평면도 URL 포함)
+      // DALL-E 임시 URL → Firebase Storage 영구 URL로 교체
+      String? permanentFloorPlanUrl;
+      if (_floorPlanImageUrl != null) {
+        permanentFloorPlanUrl = await _uploadFloorPlanToStorage(_floorPlanImageUrl!);
+      }
+
+      // [Backend 요청] 루틴 생성 (AI 공간 솔루션 + 영구 평면도 URL 포함)
       await _routineService.createRoutine(
         title: widget.routineTitle,
         time: startTimeStr,
@@ -688,7 +726,8 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
         notificationTime: widget.notificationTime,
         iotDevices: _iotDevices,
         spaceSolution: _spaceSolution.isNotEmpty ? _spaceSolution : null,
-        floorPlanImageUrl: _floorPlanImageUrl,
+        // Firebase Storage URL 우선, 업로드 실패 시 DALL-E URL 폴백
+        floorPlanImageUrl: permanentFloorPlanUrl ?? _floorPlanImageUrl,
       );
 
       if (mounted) {

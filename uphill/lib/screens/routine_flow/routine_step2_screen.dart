@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../services/routine_service.dart';
 import 'routine_step3_screen.dart';
 
 class RoutineStep2Screen extends StatefulWidget {
@@ -26,6 +27,7 @@ class _RoutineStep2ScreenState extends State<RoutineStep2Screen> {
   bool _isFlexible = true; // '변동가능' vs '불가능'
   TimeOfDay _startTime = const TimeOfDay(hour: 12, minute: 0);
   TimeOfDay _endTime = const TimeOfDay(hour: 18, minute: 0);
+  bool _isChecking = false; // 충돌 검사 중 여부
   List<int> _selectedDays = [
     1,
     2,
@@ -261,7 +263,8 @@ class _RoutineStep2ScreenState extends State<RoutineStep2Screen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _onNextPressed,
+                  // 충돌 검사 중에는 버튼 비활성화
+                  onPressed: _isChecking ? null : _onNextPressed,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF333333),
                     shape: RoundedRectangleBorder(
@@ -269,14 +272,25 @@ class _RoutineStep2ScreenState extends State<RoutineStep2Screen> {
                     ),
                     elevation: 0,
                   ),
-                  child: Text(
-                    '다음',
-                    style: GoogleFonts.notoSansKr(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: _isChecking
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : Text(
+                          '다음',
+                          style: GoogleFonts.notoSansKr(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
             ),
@@ -444,7 +458,29 @@ class _RoutineStep2ScreenState extends State<RoutineStep2Screen> {
     return _selectedDays.map((d) => dayNames[d]).join(', ');
   }
 
-  void _onNextPressed() {
+  /// 다음 버튼 핸들러: 기존 루틴과 시간·요일 충돌 검사 후 Step3으로 이동
+  Future<void> _onNextPressed() async {
+    setState(() => _isChecking = true);
+
+    try {
+      // [Backend 요청] 기존 루틴 목록 조회 후 충돌 검사
+      final existingRoutines = await RoutineService().getRoutines();
+      if (!mounted) return;
+
+      final conflictingRoutine = _findConflictingRoutine(existingRoutines);
+      if (conflictingRoutine != null) {
+        _showTimeConflictDialog(conflictingRoutine);
+        return;
+      }
+    } catch (e) {
+      // API 오류 시 검사 건너뜀 (사용자 경험 우선)
+      debugPrint('루틴 충돌 검사 실패: $e');
+    } finally {
+      if (mounted) setState(() => _isChecking = false);
+    }
+
+    if (!mounted) return;
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -459,6 +495,80 @@ class _RoutineStep2ScreenState extends State<RoutineStep2Screen> {
           selectedDays: _selectedDays,
           notificationTime: _notificationTime,
         ),
+      ),
+    );
+  }
+
+  /// 기존 루틴 목록에서 시간·요일 충돌 루틴을 반환합니다.
+  /// 충돌하는 루틴이 없으면 null을 반환합니다.
+  Map<String, dynamic>? _findConflictingRoutine(
+    List<Map<String, dynamic>> existingRoutines,
+  ) {
+    final newStartMinutes = _startTime.hour * 60 + _startTime.minute;
+    final newEndMinutes = _endTime.hour * 60 + _endTime.minute;
+
+    for (final routine in existingRoutines) {
+      // 요일 겹침 확인
+      final List<dynamic> routineDays =
+          (routine['days'] as List<dynamic>?) ?? [];
+      final hasCommonDay =
+          _selectedDays.any((day) => routineDays.contains(day));
+      if (!hasCommonDay) continue;
+
+      // 기존 루틴 시작 시간 파싱
+      final String? timeStr = routine['time'] as String?;
+      if (timeStr == null) continue;
+      final timeParts = timeStr.split(':');
+      if (timeParts.length < 2) continue;
+      final existingStartMinutes =
+          int.parse(timeParts[0]) * 60 + int.parse(timeParts[1]);
+
+      // 기존 루틴 종료 시간 파싱 (없으면 1시간 기본값 적용)
+      int existingEndMinutes;
+      final String? endTimeStr = routine['end_time'] as String?;
+      if (endTimeStr != null) {
+        final endParts = endTimeStr.split(':');
+        existingEndMinutes =
+            int.parse(endParts[0]) * 60 + int.parse(endParts[1]);
+      } else {
+        existingEndMinutes = existingStartMinutes + 60;
+      }
+
+      // 시간 범위 겹침 확인: start1 < end2 AND start2 < end1
+      if (newStartMinutes < existingEndMinutes &&
+          existingStartMinutes < newEndMinutes) {
+        return routine;
+      }
+    }
+    return null;
+  }
+
+  /// 시간 충돌 안내 다이얼로그를 표시합니다.
+  void _showTimeConflictDialog(Map<String, dynamic> conflictingRoutine) {
+    final title = conflictingRoutine['title'] as String? ?? '기존 루틴';
+    final timeStr = conflictingRoutine['time'] as String? ?? '';
+    final endTimeStr = conflictingRoutine['end_time'] as String? ?? '';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          '시간 충돌',
+          style: GoogleFonts.notoSansKr(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          '"$title" 루틴($timeStr ~ $endTimeStr)과\n시간이 겹칩니다.\n다른 시간대를 선택해주세요.',
+          style: GoogleFonts.notoSansKr(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              '확인',
+              style: GoogleFonts.notoSansKr(color: Colors.black),
+            ),
+          ),
+        ],
       ),
     );
   }

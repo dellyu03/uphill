@@ -9,6 +9,7 @@ import '../theme/app_theme.dart';
 import '../constants/app_constants.dart';
 import '../services/routine_service.dart';
 import '../services/auth_service.dart';
+import '../services/dummy_auth_service.dart';
 
 /// 피드백 화면 위젯
 /// 주간 피드백과 일간 AI 피드백을 표시합니다.
@@ -21,12 +22,14 @@ class FeedbackScreen extends StatefulWidget {
 
 /// 피드백 화면 상태
 /// 외부에서 refreshFeedback() 호출을 위해 public으로 선언
-class FeedbackScreenState extends State<FeedbackScreen> {
+class FeedbackScreenState extends State<FeedbackScreen>
+    with WidgetsBindingObserver {
   /// 루틴 서비스 싱글톤
   final RoutineService _routineService = RoutineService();
 
   /// 인증 서비스 싱글톤
   final AuthService _authService = AuthService();
+  final DummyAuthService _dummyAuthService = DummyAuthService();
 
   /// 로딩 상태
   bool _isLoading = true;
@@ -48,17 +51,32 @@ class FeedbackScreenState extends State<FeedbackScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadDailyFeedback();
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // 앱이 다시 포그라운드로 돌아올 때 피드백 새로고침
+    if (state == AppLifecycleState.resumed) {
+      _loadDailyFeedback();
+    }
+  }
+
   /// 외부에서 피드백 새로고침을 요청할 때 사용
-  /// 루틴 완료 시 MainScaffold에서 호출합니다.
   void refreshFeedback() {
     _loadDailyFeedback();
   }
 
   /// 로그인 여부 확인
-  bool get _isLoggedIn => _authService.isLoggedIn;
+  bool get _isLoggedIn =>
+      _authService.isLoggedIn || _dummyAuthService.isLoggedIn;
 
   /// 일간 피드백 로드
   /// [Backend 요청] GET /executions/daily/{date}/feedback
@@ -74,8 +92,9 @@ class FeedbackScreenState extends State<FeedbackScreen> {
       // 로그인 확인
       if (!_isLoggedIn) {
         final loaded = await _authService.loadStoredAuth();
+        final dummyLoaded = await _dummyAuthService.loadStoredAuth();
 
-        if (!loaded) {
+        if (!loaded && !dummyLoaded) {
           if (!mounted) return;
           setState(() {
             _isLoading = false;

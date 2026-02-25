@@ -121,6 +121,59 @@ class _RoutineEditScreenState extends State<RoutineEditScreen>
     super.dispose();
   }
 
+  /// 기존 루틴 목록에서 시간·요일 충돌 루틴을 반환합니다.
+  /// 현재 수정 중인 루틴은 검사에서 제외하며, 충돌이 없으면 null을 반환합니다.
+  Map<String, dynamic>? _findConflictingRoutine(
+    List<Map<String, dynamic>> existingRoutines,
+  ) {
+    final startMinutes = _startTime.hour * 60 + _startTime.minute;
+    final endMinutes = _endTime.hour * 60 + _endTime.minute;
+
+    // bool 배열(_selectedDays)을 int 목록으로 변환
+    final List<int> selectedDays = [
+      for (int i = 0; i < 7; i++)
+        if (_selectedDays[i]) i,
+    ];
+
+    for (final routine in existingRoutines) {
+      // 현재 수정 중인 루틴은 검사 제외
+      if (routine['id'] == widget.routineId) continue;
+
+      // 요일 겹침 확인
+      final List<dynamic> routineDays =
+          (routine['days'] as List<dynamic>?) ?? [];
+      final hasCommonDay =
+          selectedDays.any((day) => routineDays.contains(day));
+      if (!hasCommonDay) continue;
+
+      // 기존 루틴 시작 시간 파싱
+      final String? timeStr = routine['time'] as String?;
+      if (timeStr == null) continue;
+      final timeParts = timeStr.split(':');
+      if (timeParts.length < 2) continue;
+      final existingStartMinutes =
+          int.parse(timeParts[0]) * 60 + int.parse(timeParts[1]);
+
+      // 기존 루틴 종료 시간 파싱 (없으면 1시간 기본값 적용)
+      int existingEndMinutes;
+      final String? endTimeStr = routine['end_time'] as String?;
+      if (endTimeStr != null) {
+        final endParts = endTimeStr.split(':');
+        existingEndMinutes =
+            int.parse(endParts[0]) * 60 + int.parse(endParts[1]);
+      } else {
+        existingEndMinutes = existingStartMinutes + 60;
+      }
+
+      // 시간 범위 겹침 확인: start1 < end2 AND start2 < end1
+      if (startMinutes < existingEndMinutes &&
+          existingStartMinutes < endMinutes) {
+        return routine;
+      }
+    }
+    return null;
+  }
+
   Future<void> _saveRoutine() async {
     try {
       final startTimeStr =
@@ -131,6 +184,42 @@ class _RoutineEditScreenState extends State<RoutineEditScreen>
       List<int> days = [];
       for (int i = 0; i < 7; i++) {
         if (_selectedDays[i]) days.add(i);
+      }
+
+      // [Backend 요청] 기존 루틴 목록 조회 후 충돌 검사
+      final existingRoutines = await RoutineService().getRoutines();
+      if (!mounted) return;
+
+      final conflictingRoutine = _findConflictingRoutine(existingRoutines);
+      if (conflictingRoutine != null) {
+        final conflictTitle =
+            conflictingRoutine['title'] as String? ?? '기존 루틴';
+        final conflictTime = conflictingRoutine['time'] as String? ?? '';
+        final conflictEndTime =
+            conflictingRoutine['end_time'] as String? ?? '';
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text(
+              '시간 충돌',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            content: Text(
+              '"$conflictTitle" 루틴($conflictTime ~ $conflictEndTime)과\n시간이 겹칩니다.\n다른 시간대를 선택해주세요.',
+              style: const TextStyle(fontSize: 14),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  '확인',
+                  style: TextStyle(color: Colors.black),
+                ),
+              ),
+            ],
+          ),
+        );
+        return;
       }
 
       await RoutineService().updateRoutine(

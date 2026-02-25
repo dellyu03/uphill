@@ -1,4 +1,22 @@
-A clean and simple 2D top-view floor plan of a room for a {purpose} routine.
-Room furniture: {furniture_text}.
-Recommended arrangement based on: {solution_summary}.
-Style: minimalist architectural illustration, white background, light gray room boundary walls, furniture drawn as simple labeled rectangles with Korean text, no shadows, no decorations, bird's eye view.
+Create a clean 2D architectural top-view floor plan of a room designed for a "{purpose}" routine.
+Technical architectural floor plan, CAD style drawing, vector line art, schematic diagram
+
+Room specifications:
+- Furniture: {furniture_text}
+- Layout logic: {solution_summary}
+
+Drawing requirements:
+- Strict bird’s-eye view (90-degree top-down orthographic projection)
+- Flat 2D blueprint style (NO perspective, NO 3D effect)
+- White background
+- Room boundary walls in light gray thin lines
+- Furniture drawn as simple rectangular blocks
+- Each furniture labeled in Korean text
+- Black thin line outlines
+- No shadows
+- No textures
+- No lighting effects
+- No decorations
+- Minimalist architectural diagram style
+- Clean spacing between objects
+- Proportional layout
