@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import '../constants/app_constants.dart';
+import '../models/routine.dart';
 import 'auth_service.dart';
 import 'dummy_auth_service.dart';
 
@@ -23,78 +24,78 @@ class RoutineService {
   final DummyAuthService _dummyAuthService = DummyAuthService();
 
   // ===== In-Memory Dummy Data =====
-  final List<Map<String, dynamic>> _dummyRoutines = [
-    {
-      'id': '1',
-      'title': '모닝 스트레칭',
-      'time': '07:00',
-      'end_time': '08:00',
-      'category': '건강', // purpose
-      'purpose': '건강',
-      'color': '#FF9E9E',
-      'days': [0, 1, 2, 3, 4], // 월~금
-      'space': '방 1',
-      'description': '편안한 분위기에서 가벼운 스트레칭',
-      'is_flexible': true,
-      'notification_time': '10분 전',
-      'isPinned': false,
-      'isUpdated': true, // 업데이트 카드 (그라디언트)
-      'iot_devices': [
+  final List<Routine> _dummyRoutines = [
+    Routine(
+      id: '1',
+      title: '모닝 스트레칭',
+      time: '07:00',
+      endTime: '08:00',
+      category: '건강', // purpose
+      purpose: '건강',
+      color: '#FF9E9E',
+      days: [0, 1, 2, 3, 4], // 월~금
+      space: '방 1',
+      description: '편안한 분위기에서 가벼운 스트레칭',
+      isFlexible: true,
+      notificationTime: '10분 전',
+      isPinned: false,
+      isUpdated: true, // 업데이트 카드 (그라디언트)
+      iotDevices: [
         {'type': '조명', 'brightness': 0.8, 'hasBrightness': true},
         {'type': '커튼', 'brightness': 0.0, 'hasBrightness': false},
       ],
-    },
-    {
-      'id': '2',
-      'title': '독서',
-      'time': '20:00',
-      'end_time': '21:00',
-      'category': '자기계발',
-      'purpose': '자기계발',
-      'color': '#9E9EFF',
-      'days': [0, 1, 2, 3, 4, 5, 6],
-      'space': '거실',
-      'description': '조용한 분위기에서 독서',
-      'is_flexible': false,
-      'notification_time': '30분 전',
-      'isPinned': false,
-      'isUpdated': false, // 기본 카드
-      'iot_devices': [],
-    },
-    {
-      'id': '3',
-      'title': '영양제 먹기',
-      'time': '08:00',
-      'end_time': '08:05',
-      'category': '건강',
-      'purpose': '건강',
-      'color': '#9EFF9E',
-      'days': [0, 1, 2, 3, 4, 5, 6],
-      'space': '주방',
-      'description': '',
-      'is_flexible': true,
-      'notification_time': '5분 전',
-      'isPinned': true, // 핀 카드 (회전된 아이콘)
-      'isUpdated': false,
-      'iot_devices': [],
-    },
-    {
-      'id': '4',
-      'title': '영어 단어 암기',
-      'time': '21:00',
-      'end_time': '22:00',
-      'category': '학습',
-      'purpose': '학습',
-      'color': '#FFFF9E',
-      'days': [0, 2, 4],
-      'space': '방 2',
-      'description': '집중할 수 있는 환경',
-      'is_flexible': false,
-      'notification_time': '1시간 전',
-      'isPinned': false,
-      'isUpdated': false, // 기본 카드
-      'iot_devices': [],
-    },
+    ),
+    Routine(
+      id: '2',
+      title: '독서',
+      time: '20:00',
+      endTime: '21:00',
+      category: '자기계발',
+      purpose: '자기계발',
+      color: '#9E9EFF',
+      days: [0, 1, 2, 3, 4, 5, 6],
+      space: '거실',
+      description: '조용한 분위기에서 독서',
+      isFlexible: false,
+      notificationTime: '30분 전',
+      isPinned: false,
+      isUpdated: false, // 기본 카드
+      iotDevices: [],
+    ),
+    Routine(
+      id: '3',
+      title: '영양제 먹기',
+      time: '08:00',
+      endTime: '08:05',
+      category: '건강',
+      purpose: '건강',
+      color: '#9EFF9E',
+      days: [0, 1, 2, 3, 4, 5, 6],
+      space: '주방',
+      description: '',
+      isFlexible: true,
+      notificationTime: '5분 전',
+      isPinned: true, // 핀 카드 (회전된 아이콘)
+      isUpdated: false,
+      iotDevices: [],
+    ),
+    Routine(
+      id: '4',
+      title: '영어 단어 암기',
+      time: '21:00',
+      endTime: '22:00',
+      category: '학습',
+      purpose: '학습',
+      color: '#FFFF9E',
+      days: [0, 2, 4],
+      space: '방 2',
+      description: '집중할 수 있는 환경',
+      isFlexible: false,
+      notificationTime: '1시간 전',
+      isPinned: false,
+      isUpdated: false, // 기본 카드
+      iotDevices: [],
+    ),
   ];
 
   // ===== 루틴 CRUD API =====
@@ -102,7 +103,7 @@ class RoutineService {
   /// 루틴 목록 조회
   /// [Backend 요청] GET /routines
   /// 사용자의 모든 루틴 목록을 반환합니다.
-  Future<List<Map<String, dynamic>>> getRoutines() async {
+  Future<List<Routine>> getRoutines() async {
     // 1. 더미 로그인 확인
     if (_dummyAuthService.isLoggedIn) {
       debugPrint('🔄 [Dummy] 루틴 목록 조회');
@@ -127,7 +128,9 @@ class RoutineService {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        return data.map((item) => item as Map<String, dynamic>).toList();
+        return data
+            .map((item) => Routine.fromJson(item as Map<String, dynamic>))
+            .toList();
       } else if (response.statusCode == 401) {
         throw Exception(TextConstants.authExpired);
       } else {
@@ -141,7 +144,7 @@ class RoutineService {
 
   /// 루틴 생성
   /// [Backend 요청] POST /routines
-  Future<Map<String, dynamic>> createRoutine({
+  Future<Routine> createRoutine({
     required String title,
     required String time,
     required String category,
@@ -163,23 +166,23 @@ class RoutineService {
       debugPrint('   - Space: $space');
       debugPrint('   - Devices: ${iotDevices?.length}');
 
-      final newRoutine = {
-        'id': 'dummy_${DateTime.now().millisecondsSinceEpoch}',
-        'title': title,
-        'time': time, // Start Time
-        'category': category,
-        'color': color ?? '#9CAA7D',
-        'days': days ?? [],
-        'purpose': purpose,
-        'space': space,
-        'description': description,
-        'is_flexible': isFlexible,
-        'notification_time': notificationTime,
-        'end_time': endTime,
-        'iot_devices': iotDevices,
-        'isPinned': false,
-        'isUpdated': true,
-      };
+      final newRoutine = Routine(
+        id: 'dummy_${DateTime.now().millisecondsSinceEpoch}',
+        title: title,
+        time: time, // Start Time
+        category: category,
+        color: color ?? '#9CAA7D',
+        days: days ?? [],
+        purpose: purpose,
+        space: space,
+        description: description,
+        isFlexible: isFlexible ?? false,
+        notificationTime: notificationTime,
+        endTime: endTime,
+        iotDevices: iotDevices,
+        isPinned: false,
+        isUpdated: true,
+      );
       _dummyRoutines.add(newRoutine);
       return newRoutine;
     }
@@ -215,7 +218,8 @@ class RoutineService {
       );
 
       if (response.statusCode == 201) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        return Routine.fromJson(data);
       } else if (response.statusCode == 401) {
         throw Exception(TextConstants.authExpired);
       } else {
@@ -229,7 +233,7 @@ class RoutineService {
 
   /// 루틴 수정
   /// [Backend 요청] PUT /routines/{id}
-  Future<Map<String, dynamic>> updateRoutine({
+  Future<Routine> updateRoutine({
     required String routineId,
     String? title,
     String? time,
@@ -248,28 +252,25 @@ class RoutineService {
     // 1. 더미 로그인 확인
     if (_dummyAuthService.isLoggedIn) {
       debugPrint('🔄 [Dummy] 루틴 수정: $routineId');
-      final index = _dummyRoutines.indexWhere(
-        (r) => r['id'].toString() == routineId,
-      );
+      final index = _dummyRoutines.indexWhere((r) => r.id == routineId);
       if (index != -1) {
         // 기존 값 유지하면서 업데이트
         final old = _dummyRoutines[index];
-        final updated = {
-          ...old,
-          if (title != null) 'title': title,
-          if (time != null) 'time': time,
-          if (category != null) 'category': category,
-          if (color != null) 'color': color,
-          if (days != null) 'days': days,
-          if (purpose != null) 'purpose': purpose,
-          if (space != null) 'space': space,
-          if (description != null) 'description': description,
-          if (isFlexible != null) 'is_flexible': isFlexible,
-          if (notificationTime != null) 'notification_time': notificationTime,
-          if (endTime != null) 'end_time': endTime,
-          if (iotDevices != null) 'iot_devices': iotDevices,
-          'isUpdated': true,
-        };
+        final updated = old.copyWith(
+          title: title,
+          time: time,
+          category: category,
+          color: color,
+          days: days,
+          purpose: purpose,
+          space: space,
+          description: description,
+          isFlexible: isFlexible,
+          notificationTime: notificationTime,
+          endTime: endTime,
+          iotDevices: iotDevices,
+          isUpdated: true,
+        );
         _dummyRoutines[index] = updated;
         return updated;
       } else {
@@ -310,7 +311,8 @@ class RoutineService {
       );
 
       if (response.statusCode == 200) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        return Routine.fromJson(data);
       } else if (response.statusCode == 401) {
         throw Exception(TextConstants.authExpired);
       } else {
@@ -328,7 +330,7 @@ class RoutineService {
     // 1. 더미 로그인 확인
     if (_dummyAuthService.isLoggedIn) {
       debugPrint('🔄 [Dummy] 루틴 삭제: $routineId');
-      _dummyRoutines.removeWhere((r) => r['id'].toString() == routineId);
+      _dummyRoutines.removeWhere((r) => r.id == routineId);
       return;
     }
 
@@ -511,19 +513,18 @@ class RoutineService {
 
   /// 루틴 단건 조회
   /// [Backend 요청] GET /routines/{id}
-  Future<Map<String, dynamic>> getRoutine(String routineId) async {
+  Future<Routine> getRoutine(String routineId) async {
     // 1. 더미 로그인 확인
     if (_dummyAuthService.isLoggedIn) {
       debugPrint('🔄 [Dummy] 루틴 단건 조회: $routineId');
-      final routine = _dummyRoutines.firstWhere(
-        (element) => element['id'].toString() == routineId,
-        orElse: () => {},
+      final routineIndex = _dummyRoutines.indexWhere(
+        (element) => element.id == routineId,
       );
 
-      if (routine.isEmpty) {
+      if (routineIndex == -1) {
         throw Exception('루틴을 찾을 수 없습니다.');
       }
-      return routine;
+      return _dummyRoutines[routineIndex];
     }
 
     try {
@@ -542,7 +543,8 @@ class RoutineService {
       );
 
       if (response.statusCode == 200) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        return Routine.fromJson(data);
       } else if (response.statusCode == 401) {
         throw Exception(TextConstants.authExpired);
       } else {

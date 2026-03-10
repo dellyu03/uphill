@@ -4,6 +4,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 import '../theme/app_theme.dart';
 import '../widgets/date_strip.dart';
@@ -16,6 +17,7 @@ import 'routine_in_progress_screen.dart';
 import '../services/routine_service.dart';
 import '../services/auth_service.dart';
 import '../services/dummy_auth_service.dart';
+import '../models/routine.dart';
 
 /// 홈 화면 위젯
 /// 시간대별 루틴 타임라인을 표시합니다.
@@ -36,7 +38,7 @@ class HomeScreenState extends State<HomeScreen> {
   DateTime? _selectedDay;
 
   /// 모든 루틴 목록
-  List<Map<String, dynamic>> _allRoutines = [];
+  List<Routine> _allRoutines = [];
 
   /// 타임라인 스크롤 컨트롤러
   final ScrollController _scrollController = ScrollController();
@@ -122,21 +124,16 @@ class HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// 루틴 데이터 가공
-  /// 시작/종료 시간, 요일 정보를 추가합니다.
-  List<Map<String, dynamic>> _processRoutines(
-    List<Map<String, dynamic>> routines,
-  ) {
+  /// 루틴 데이터 가공 (시간 재처리 등 필요한 경우)
+  /// 하지만 이제 Routing 모델 내부 혹은 getter에서 파싱을 지원하므로,
+  /// 단순하게 시작/종료 시간이 비어있을 때 채워넣고 Routine을 반환하도록 합니다.
+  List<Routine> _processRoutines(List<Routine> routines) {
     return routines.map((routine) {
-      final time = routine['time'] as String;
+      String endTime = routine.endTime ?? '';
 
-      // end_time이 있으면 사용, 없으면 기본 30분 후로 계산
-      String endTime;
-      if (routine['end_time'] != null && routine['end_time'] != '') {
-        endTime = routine['end_time'] as String;
-      } else {
+      if (endTime.isEmpty && routine.time != null && routine.time!.isNotEmpty) {
         // 기본 30분 간격으로 종료 시간 계산
-        final timeParts = time.split(':');
+        final timeParts = routine.time!.split(':');
         final hour = int.parse(timeParts[0]);
         final minute = int.parse(timeParts[1]);
         final endMinute = minute + RoutineConstants.defaultDurationMinutes;
@@ -146,48 +143,35 @@ class HomeScreenState extends State<HomeScreen> {
             '${endHour.toString().padLeft(2, '0')}:${endMin.toString().padLeft(2, '0')}';
       }
 
-      // days가 null이면 빈 리스트로 처리
-      final days = routine['days'] != null
-          ? List<int>.from(routine['days'])
-          : <int>[];
-
-      return {
-        'id': routine['id'],
-        'title': routine['title'],
-        'start': time,
-        'end': endTime,
-        'category': routine['category'],
-        'color': routine['color'],
-        'days': days,
-        'isUpdated': routine['isUpdated'] ?? false,
-        'isPinned': routine['isPinned'] ?? false,
-      };
+      return routine.copyWith(endTime: endTime.isNotEmpty ? endTime : null);
     }).toList();
   }
 
   /// 선택된 날짜에 해당하는 루틴 필터링
-  List<Map<String, dynamic>> _getRoutinesForDate(DateTime date) {
+  List<Routine> _getRoutinesForDate(DateTime date) {
     // Dart weekday: 1=월, 2=화, ..., 7=일
     // 시스템: 0=월, 1=화, ..., 6=일
     final dayIndex = date.weekday - 1;
 
     return _allRoutines.where((routine) {
-      final days = routine['days'] as List<int>;
-      if (days.isEmpty) return false;
-      return days.contains(dayIndex);
+      if (routine.days.isEmpty) return false;
+      return routine.days.contains(dayIndex);
     }).toList();
   }
 
   /// 현재 진행 중인 루틴 찾기
   /// 현재 시간이 루틴의 시작~종료 시간 사이이면 진행 중으로 판단
-  Map<String, dynamic>? _getActiveRoutine() {
+  Routine? _getActiveRoutine() {
     final now = DateTime.now();
     final todayRoutines = _getRoutinesForDate(now);
     final nowTotalMins = now.hour * 60 + now.minute;
 
     for (var routine in todayRoutines) {
-      final start = _parseTime(routine['start'] as String);
-      final end = _parseTime(routine['end'] as String);
+      final start = routine.parsedStartTime;
+      final end = routine.parsedEndTime;
+
+      if (start == null || end == null) continue;
+
       final startMins = start.hour * 60 + start.minute;
       final endMins = end.hour * 60 + end.minute;
 
@@ -211,8 +195,9 @@ class HomeScreenState extends State<HomeScreen> {
 
     // 현재 진행 중인 루틴 찾기
     for (var routine in routines) {
-      final start = _parseTime(routine['start'] as String);
-      final end = _parseTime(routine['end'] as String);
+      final start = routine.parsedStartTime;
+      final end = routine.parsedEndTime;
+      if (start == null || end == null) continue;
 
       final nowTotalMins = now.hour * 60 + now.minute;
       final startTotalMins = start.hour * 60 + start.minute;
@@ -226,12 +211,6 @@ class HomeScreenState extends State<HomeScreen> {
     }
 
     _scrollController.jumpTo(scrollOffset);
-  }
-
-  /// 시간 문자열 파싱
-  TimeOfDay _parseTime(String timeStr) {
-    final parts = timeStr.split(':');
-    return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
   }
 
   @override
@@ -263,19 +242,34 @@ class HomeScreenState extends State<HomeScreen> {
 
   /// 상단 앱바 위젯
   Widget _buildCustomAppBar() {
+    final monthStr = DateFormat(
+      'MMMM',
+      'en_US',
+    ).format(_selectedDay ?? DateTime.now());
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+      padding: const EdgeInsets.fromLTRB(18, 16, 24, 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // "Today" 타이틀
-          Text(
-            TextConstants.homeTitle,
-            style: GoogleFonts.montserrat(
-              fontSize: 40,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF555151),
-            ),
+          Row(
+            children: [
+              Text(
+                monthStr,
+                style: GoogleFonts.montserrat(
+                  fontSize: 30,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF555151),
+                  letterSpacing: -1.5,
+                ),
+              ),
+              const SizedBox(width: 14),
+              const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: Color(0xFFBDBDBD),
+                size: 32,
+              ),
+            ],
           ),
         ],
       ),
@@ -305,14 +299,14 @@ class HomeScreenState extends State<HomeScreen> {
     return Padding(
       padding: const EdgeInsets.only(top: 16),
       child: ProgressBanner(
-        routineTitle: activeRoutine['title'] as String,
+        routineTitle: activeRoutine.title,
         onPlayTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => RoutineInProgressScreen(
-                routineId: activeRoutine['id'].toString(),
-                title: activeRoutine['title'] as String,
+                routineId: activeRoutine.id,
+                title: activeRoutine.title,
               ),
             ),
           ).then((_) => _loadRoutines());
@@ -398,6 +392,12 @@ class HomeScreenState extends State<HomeScreen> {
               _buildEmptyState()
             else
               ..._buildRoutineCards(routines, layoutInfo),
+
+            // 현재 시간 지시선
+            if (selectedDate.year == now.year &&
+                selectedDate.month == now.month &&
+                selectedDate.day == now.day)
+              _buildCurrentTimeIndicator(now),
           ],
         ),
       ),
@@ -418,16 +418,55 @@ class HomeScreenState extends State<HomeScreen> {
               '${i.toString().padLeft(2, '0')}:00',
               style: GoogleFonts.montserrat(
                 color: i == now.hour
-                    ? colors.timeHighlight
+                    ? const Color(0xFF98A340)
                     : const Color.fromRGBO(0, 0, 0, 0.2), // Figma 20% opacity
-                fontSize: 13,
-                fontWeight: i == now.hour ? FontWeight.bold : FontWeight.w500,
+                fontSize: 12,
+                fontWeight: i == now.hour ? FontWeight.w600 : FontWeight.w500,
               ),
               textAlign: TextAlign.right,
             ),
           ),
         ),
     ];
+  }
+
+  /// 현재 시간 지시선 (빨간 선과 점)
+  Widget _buildCurrentTimeIndicator(DateTime now) {
+    if (now.hour < LayoutConstants.startHour ||
+        now.hour > LayoutConstants.endHour) {
+      return const SizedBox.shrink();
+    }
+
+    // 시간 라벨의 텍스트가 위아래로 정렬되는 기준을 고려한 오프셋 조정 (대략 +8px)
+    final topOffset =
+        ((now.hour - LayoutConstants.startHour) * 60 + now.minute) /
+            60 *
+            LayoutConstants.hourHeight +
+        8;
+
+    return Positioned(
+      top: topOffset,
+      left: 45, // 시간 라벨 이후부터 시작
+      right: 0, // 끝까지
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Container(
+            width: 150, // 진행선 길이 (임의의 길이 혹은 고정 길이)
+            height: 3,
+            color: const Color(0xFFFF0000), // 리얼 레드
+          ),
+          Container(
+            width: 14,
+            height: 14,
+            decoration: const BoxDecoration(
+              color: Color(0xFFFF0000),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// 빈 상태 위젯
@@ -473,7 +512,7 @@ class HomeScreenState extends State<HomeScreen> {
 
   /// 루틴 카드 위젯 리스트
   List<Widget> _buildRoutineCards(
-    List<Map<String, dynamic>> routines,
+    List<Routine> routines,
     List<Map<String, double>> layoutInfo,
   ) {
     final defaultWidth =
@@ -486,8 +525,9 @@ class HomeScreenState extends State<HomeScreen> {
       final routine = entry.value;
       final layout = layoutInfo[index];
 
-      final start = _parseTime(routine['start'] as String);
-      final end = _parseTime(routine['end'] as String);
+      final start = routine.parsedStartTime;
+      final end = routine.parsedEndTime;
+      if (start == null || end == null) return const SizedBox.shrink();
 
       final startMinutes =
           start.hour * 60 + start.minute - (LayoutConstants.startHour * 60);
@@ -508,10 +548,10 @@ class HomeScreenState extends State<HomeScreen> {
         height: cardHeight,
         // 루틴 카드 위젯
         child: RoutineCard(
-          title: routine['title'],
-          timeRange: '${routine['start']} - ${routine['end']}',
-          isUpdated: routine['isUpdated'] ?? false,
-          isPinned: routine['isPinned'] ?? false,
+          title: routine.title,
+          timeRange: '${routine.time} - ${routine.endTime}',
+          isUpdated: routine.isUpdated,
+          isPinned: routine.isPinned,
           onTap: () => _onRoutineCardTapped(routine),
         ),
       );
@@ -519,14 +559,14 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   /// 루틴 카드 탭 핸들러
-  void _onRoutineCardTapped(Map<String, dynamic> routine) {
+  void _onRoutineCardTapped(Routine routine) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => RoutineDetailScreen(
-          routineId: routine['id'].toString(),
-          title: routine['title'],
-          timeRange: '${routine['start']} - ${routine['end']}',
+          routineId: routine.id,
+          title: routine.title,
+          timeRange: '${routine.time} - ${routine.endTime}',
         ),
       ),
     ).then((_) {
@@ -536,15 +576,15 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   /// 겹치는 루틴들의 레이아웃 계산
-  List<Map<String, double>> _calculateRoutineLayout(
-    List<Map<String, dynamic>> routines,
-  ) {
+  List<Map<String, double>> _calculateRoutineLayout(List<Routine> routines) {
     final List<Map<String, double>> layout = [];
 
     for (int i = 0; i < routines.length; i++) {
       final currentRoutine = routines[i];
-      final currentStart = _parseTime(currentRoutine['start'] as String);
-      final currentEnd = _parseTime(currentRoutine['end'] as String);
+      final currentStart = currentRoutine.parsedStartTime;
+      final currentEnd = currentRoutine.parsedEndTime;
+      if (currentStart == null || currentEnd == null) continue;
+
       final currentStartMins = currentStart.hour * 60 + currentStart.minute;
       final currentEndMins = currentEnd.hour * 60 + currentEnd.minute;
 
@@ -554,8 +594,10 @@ class HomeScreenState extends State<HomeScreen> {
         if (i == j) continue;
 
         final otherRoutine = routines[j];
-        final otherStart = _parseTime(otherRoutine['start'] as String);
-        final otherEnd = _parseTime(otherRoutine['end'] as String);
+        final otherStart = otherRoutine.parsedStartTime;
+        final otherEnd = otherRoutine.parsedEndTime;
+        if (otherStart == null || otherEnd == null) continue;
+
         final otherStartMins = otherStart.hour * 60 + otherStart.minute;
         final otherEndMins = otherEnd.hour * 60 + otherEnd.minute;
 

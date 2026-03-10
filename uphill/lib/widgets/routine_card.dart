@@ -29,65 +29,60 @@ class RoutineCard extends StatelessWidget {
           onTap: onTap,
           child: ConstrainedBox(
             constraints: const BoxConstraints(
-              minHeight: 65, // 최소 높이 65px 루틴 이름과 루틴 시간의 최소 높이
+              minHeight: 60, // 최소 높이 60px
             ),
             child: Container(
               decoration: BoxDecoration(
-                // Type 1: Default (no gradient)
-                // Type 2: Pinned (no gradient, different bg color)
-                // Type 3: Updated (gradient background)
                 color: isUpdated
                     ? null
                     : (isPinned ? colors.routinePinned : colors.routineDefault),
                 gradient: isUpdated
-                    ? LinearGradient(
+                    ? const LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          const Color.fromRGBO(196, 200, 165, 0.4),
-                          const Color.fromRGBO(201, 207, 173, 1.0),
+                          Color.fromRGBO(196, 200, 165, 0.4),
+                          Color.fromRGBO(201, 207, 173, 1.0),
                         ],
-                        stops: const [0.37, 1.0],
+                        stops: [0.37, 1.0],
                       )
                     : null,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(10), // 20 -> 10
                 boxShadow: [
                   BoxShadow(
                     color: const Color.fromRGBO(0, 0, 0, 0.03),
                     blurRadius: isUpdated ? 4 : 6,
                     offset: Offset(0, isUpdated ? 1 : 1),
                   ),
-                  BoxShadow(
-                    color: const Color.fromRGBO(0, 0, 0, 0.02),
+                  const BoxShadow(
+                    color: Color.fromRGBO(0, 0, 0, 0.02),
                     blurRadius: 4,
-                    offset: const Offset(0, 0),
+                    offset: Offset(0, 0),
                   ),
                 ],
               ),
               child: Stack(
                 children: [
-                  // Additional gradient layer for updated cards (yellow tint)
                   if (isUpdated)
                     Positioned.fill(
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(10),
                         child: Container(
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
-                                const Color.fromRGBO(255, 254, 211, 0),
-                                const Color.fromRGBO(255, 254, 211, 0.2),
+                                Color.fromRGBO(255, 254, 211, 0),
+                                Color.fromRGBO(255, 254, 211, 0.2),
                               ],
-                              stops: const [0.53, 1.0],
+                              stops: [0.53, 1.0],
                             ),
                           ),
                         ),
                       ),
                     ),
 
-                  // Content - always use vertical layout
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20.0,
@@ -95,7 +90,7 @@ class RoutineCard extends StatelessWidget {
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.start, // 상단 정렬로 변경
+                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -106,7 +101,10 @@ class RoutineCard extends StatelessWidget {
                                 style: GoogleFonts.notoSansKr(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF515151),
+                                  color: isPinned
+                                      ? Colors.white
+                                      : const Color(0xFF515151),
+                                  letterSpacing: -0.45,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -118,14 +116,17 @@ class RoutineCard extends StatelessWidget {
                               const RoutineBadge(type: RoutineBadgeType.pinned),
                           ],
                         ),
-                        const SizedBox(height: 4), // Figma: gap-[4px]
+                        const SizedBox(height: 4),
                         Text(
                           timeRange,
                           style: GoogleFonts.notoSansKr(
                             fontSize: 11,
-                            color: const Color.fromRGBO(27, 27, 27, 0.4),
+                            color: isPinned
+                                ? Colors.white.withValues(alpha: 0.4)
+                                : const Color.fromRGBO(27, 27, 27, 0.4),
                             height: 1.2,
                             fontWeight: FontWeight.w400,
+                            letterSpacing: -0.33,
                           ),
                         ),
                       ],

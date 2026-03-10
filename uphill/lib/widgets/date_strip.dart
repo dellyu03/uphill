@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../theme/app_theme.dart';
 
 class DateStrip extends StatelessWidget {
   final DateTime selectedDate;
@@ -57,23 +56,15 @@ class _DateItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Figma Colors inferred
-    // Selected: Background almost black/dark grey, Text White
-    // Unselected: Transparent, Text Grey
-
-    final colors = Theme.of(context).extension<UphillColors>()!;
     final dayStr = DateFormat('d').format(date);
     final weekStr = DateFormat('E', 'en_US').format(date).toUpperCase();
 
     return Container(
-      width: 52, // Figma width
-      margin: const EdgeInsets.symmetric(
-        vertical: 4,
-      ), // Margin for shadow if needed
+      width: 44, // Figma constraint adjusted
+      height: 60,
       decoration: BoxDecoration(
-        color: isSelected ? colors.dateSelectedBg : Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
-        border: isSelected ? null : Border.all(color: Colors.transparent),
+        color: isSelected ? const Color(0xFFE1EB96) : Colors.transparent,
+        borderRadius: BorderRadius.circular(isSelected ? 8 : 20),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -81,24 +72,26 @@ class _DateItem extends StatelessWidget {
           // Day Number
           Text(
             dayStr,
-            style: GoogleFonts.montserrat(
+            style: GoogleFonts.notoSansKr(
               fontSize: 20,
               fontWeight: FontWeight.w600,
               color: isSelected
-                  ? const Color(0xFF504D4D)
+                  ? const Color(0xFF3D3D3D)
                   : const Color(0xFFC6C5C3),
+              height: 1.2,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 3),
           // Weekday
           Text(
             weekStr,
-            style: GoogleFonts.montserrat(
+            style: GoogleFonts.notoSansKr(
               fontSize: 10,
               fontWeight: FontWeight.w500,
               color: isSelected
-                  ? const Color(0xFF424242)
+                  ? const Color(0xFF3D3D3D)
                   : const Color(0xFFC6C5C3),
+              height: 1.2,
             ),
           ),
         ],
