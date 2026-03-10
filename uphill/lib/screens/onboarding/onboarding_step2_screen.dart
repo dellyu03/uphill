@@ -287,136 +287,166 @@ class _OnboardingStep2ScreenState extends State<OnboardingStep2Screen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            children: [
-              const Spacer(flex: 1),
-              Text(
-                '카메라로 방 인식을\n시작할까요?',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.notoSansKr(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF1B1B1B),
-                  letterSpacing: -0.84,
-                  height: 1.4,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(color: Color(0xFFF8F8F8)),
+        child: Stack(
+          children: [
+            // Background Gradient
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: const Alignment(0, -0.6),
+                    end: const Alignment(0, 1.2),
+                    colors: [
+                      const Color(0xFFBDDE54).withValues(alpha: 0),
+                      const Color(0xFFC7DE5D).withValues(alpha: 0.165),
+                      const Color(0xFFEAF0C2).withValues(alpha: 0.5),
+                      const Color(0xFFD4E090).withValues(alpha: 0.5),
+                      const Color(0xFFAABB49).withValues(alpha: 0.5),
+                    ],
+                    stops: const [0.1048, 0.2995, 0.4909, 0.6743, 1.0],
+                  ),
                 ),
               ),
-              const SizedBox(height: 60),
-              _buildPhoneIllustration(),
-              const Spacer(flex: 2),
-              _buildButtonRow(),
-              const SizedBox(height: 48),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPhoneIllustration() {
-    return Container(
-      width: 240,
-      height: 240,
-      decoration: BoxDecoration(
-        color: const Color(0xFF9CAA7D).withValues(alpha: 0.3),
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: Container(
-          width: 120,
-          height: 200,
-          decoration: BoxDecoration(
-            color: const Color(0xFF9CAA7D),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFF6B7A54), width: 3),
-          ),
-          child: const Center(
-            child: Icon(
-              Icons.sentiment_satisfied,
-              size: 60,
-              color: Color(0xFFE9E8E7),
             ),
-          ),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 70), // StatusBar + Top margin
+                    // Top Icon Placeholder (Camera)
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFA5BB3D),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.camera_alt_outlined,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '카메라',
+                            style: GoogleFonts.notoSansKr(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF4A4A4A),
+                              letterSpacing: -0.56,
+                            ),
+                          ),
+                          TextSpan(
+                            text: '로 방 인식을\n시작할까요?',
+                            style: GoogleFonts.notoSansKr(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w400,
+                              color: const Color(0xFF787878),
+                              letterSpacing: -0.56,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    _buildButtonRow(),
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildButtonRow() {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: SizedBox(
-            height: 56,
-            child: ElevatedButton(
-              onPressed: _isProcessing ? null : _handleCameraRequest,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF1B1B1B),
-                elevation: 0,
-                disabledBackgroundColor: const Color(0xFFD1D1D1),
-                shadowColor: Colors.black.withValues(alpha: 0.04),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton(
+            onPressed: _isProcessing ? null : _handleCameraRequest,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFFA5BB3D),
+              elevation: 0,
+              disabledBackgroundColor: Colors.white.withValues(alpha: 0.5),
+              disabledForegroundColor: const Color(
+                0xFFA5BB3D,
+              ).withValues(alpha: 0.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
               ),
-              child: _isProcessing
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Color(0xFF9CAA7D),
-                        ),
-                      ),
-                    )
-                  : Text(
-                      '예',
-                      style: GoogleFonts.notoSansKr(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.48,
+            ),
+            child: _isProcessing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Color(0xFFA5BB3D),
                       ),
                     ),
-            ),
+                  )
+                : Text(
+                    '예',
+                    style: GoogleFonts.notoSansKr(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.32,
+                    ),
+                  ),
           ),
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: SizedBox(
-            height: 56,
-            child: ElevatedButton(
-              onPressed: _isProcessing
-                  ? null
-                  : () {
-                      Navigator.pushNamed(
-                        context,
-                        '/onboarding/step3',
-                        arguments: {'hasCamera': false},
-                      );
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF1B1B1B),
-                elevation: 0,
-                disabledBackgroundColor: const Color(0xFFD1D1D1),
-                shadowColor: Colors.black.withValues(alpha: 0.04),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton(
+            onPressed: _isProcessing
+                ? null
+                : () {
+                    Navigator.pushNamed(
+                      context,
+                      '/onboarding/step3',
+                      arguments: {'hasCamera': false},
+                    );
+                  },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF999999),
+              elevation: 0,
+              disabledBackgroundColor: Colors.white.withValues(alpha: 0.5),
+              disabledForegroundColor: const Color(
+                0xFF999999,
+              ).withValues(alpha: 0.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
               ),
-              child: Text(
-                '아니요',
-                style: GoogleFonts.notoSansKr(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.48,
-                ),
+            ),
+            child: Text(
+              '아니요',
+              style: GoogleFonts.notoSansKr(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.32,
               ),
             ),
           ),

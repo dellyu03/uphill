@@ -155,29 +155,47 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32.0),
-          child: Column(
-            children: [
-              const Spacer(flex: 1),
-
-              // 헤더 텍스트
-              _buildHeader(),
-
-              const SizedBox(height: 40),
-
-              // 일러스트레이션
-              _buildIllustration(),
-
-              const Spacer(flex: 2),
-
-              // 버튼들
-              _buildButtons(),
-
-              const SizedBox(height: 48),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            stops: [0.1, 0.3, 0.49, 0.67, 1.0],
+            colors: [
+              Color(0x00BDDE54), // rgba(189, 222, 84, 0)
+              Color(0x54C7DE5D), // rgba(199, 222, 93, 0.33)
+              Color(0xFFEAF0C2), // rgb(234, 240, 194)
+              Color(0xFFD4E090), // rgb(212, 224, 144)
+              Color(0xFFAABB49), // rgb(170, 187, 73)
             ],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 100),
+
+                // 헤더 텍스트
+                _buildHeader(),
+
+                const Spacer(),
+
+                // 일러스트레이션 (Figma의 경우 배경 곡선이 들어가나, 에센셜한 부분만 유지)
+                Center(child: _buildIllustration()),
+
+                const Spacer(),
+
+                // 버튼들
+                _buildButtons(),
+
+                const SizedBox(height: 60),
+              ],
+            ),
           ),
         ),
       ),
@@ -185,70 +203,41 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildHeader() {
-    return Column(
-      children: [
-        Text(
-          '나에게',
-          style: GoogleFonts.notoSansKr(
-            fontSize: 24,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF1B1B1B),
-            letterSpacing: -0.72,
+    return Padding(
+      padding: const EdgeInsets.only(left: 2.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '나에게\n맞추어 지는 루틴',
+            style: GoogleFonts.notoSansKr(
+              fontSize: 40,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF4A4A4A),
+              letterSpacing: -0.8,
+              height: 1.5,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          '맞춰 지는 루틴',
-          style: GoogleFonts.notoSansKr(
-            fontSize: 24,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF1B1B1B),
-            letterSpacing: -0.72,
+          const SizedBox(height: 16),
+          Text(
+            'Uphill',
+            style: GoogleFonts.montserrat(
+              fontSize: 48,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              letterSpacing: -1.44,
+            ),
           ),
-        ),
-        const SizedBox(height: 24),
-        Text(
-          'Uphill',
-          style: GoogleFonts.montserrat(
-            fontSize: 48,
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFF9CAA7D),
-            letterSpacing: -1.44,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildIllustration() {
     return SizedBox(
-      height: 280,
-      child: Image.asset(
-        'assets/images/manager_desk.png',
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) {
-          // Fallback illustration using Icon
-          return Container(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.task_alt,
-                  size: 120,
-                  color: const Color(0xFF1B1B1B).withValues(alpha: 0.6),
-                ),
-                const SizedBox(height: 16),
-                Icon(
-                  Icons.person,
-                  size: 80,
-                  color: const Color(0xFF1B1B1B).withValues(alpha: 0.8),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+      height: 200,
+      // 기존 일러스트 또는 피그마 상의 원형 그래픽으로 대체 가능하므로 투명 처리해 둡니다.
+      child: Container(),
     );
   }
 
@@ -258,18 +247,15 @@ class _LoginScreenState extends State<LoginScreen> {
         // Google 로그인 버튼
         SizedBox(
           width: double.infinity,
-          height: 56,
+          height: 50,
           child: ElevatedButton(
             onPressed: _loading ? null : _showAccountSelection,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF1B1B1B),
               elevation: 0,
-              shadowColor: Colors.black.withValues(alpha: 0.04),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(24),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             ),
             child: _loading
                 ? const SizedBox(
@@ -278,7 +264,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        Color(0xFF1B1B1B),
+                        Color(0xFFADBE3E),
                       ),
                     ),
                   )
@@ -286,24 +272,29 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        width: 24,
-                        height: 24,
-                        color: Colors.white,
+                        width: 20,
+                        height: 20,
+                        alignment: Alignment.center,
                         child: Image.asset(
                           'assets/images/google_icon.png',
-                          width: 24,
-                          height: 24,
-                          fit: BoxFit.contain,
+                          width: 20,
+                          height: 20,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(
+                                Icons.g_mobiledata,
+                                size: 24,
+                                color: Colors.blue,
+                              ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
                       Text(
                         '구글 계정으로 시작하기',
                         style: GoogleFonts.notoSansKr(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: const Color(0xFF1B1B1B),
-                          letterSpacing: -0.48,
+                          color: const Color(0xFFADBE3E),
+                          letterSpacing: -0.32,
                         ),
                       ),
                     ],
@@ -311,31 +302,28 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
 
         // 회원가입 버튼
         SizedBox(
           width: double.infinity,
-          height: 56,
+          height: 50,
           child: ElevatedButton(
             onPressed: _loading ? null : _showAccountSelection,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF1B1B1B),
               elevation: 0,
-              shadowColor: Colors.black.withValues(alpha: 0.04),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(24),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             ),
             child: Text(
               '회원가입하기',
               style: GoogleFonts.notoSansKr(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFF1B1B1B),
-                letterSpacing: -0.48,
+                color: const Color(0xFF797979),
+                letterSpacing: -0.32,
               ),
             ),
           ),
