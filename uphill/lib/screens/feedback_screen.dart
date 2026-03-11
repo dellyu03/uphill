@@ -1,7 +1,4 @@
-/// 피드백 화면 위젯
-/// AI 피드백 및 일일 인사이트를 표시합니다.
-library;
-
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -37,6 +34,9 @@ class FeedbackScreenState extends State<FeedbackScreen>
   /// 에러 메시지
   String? _errorMessage;
 
+  /// 현재 표시 중인 날짜
+  late DateTime _currentDate;
+
   // AI 피드백 데이터
   String _aiFeedbackShort = '';
   String _aiFeedbackFull = '';
@@ -51,6 +51,7 @@ class FeedbackScreenState extends State<FeedbackScreen>
   @override
   void initState() {
     super.initState();
+    _currentDate = DateTime.now();
     WidgetsBinding.instance.addObserver(this);
     _loadDailyFeedback();
   }
@@ -104,10 +105,9 @@ class FeedbackScreenState extends State<FeedbackScreen>
         }
       }
 
-      // 오늘 날짜로 피드백 조회
-      final today = DateTime.now();
+      // 선택된 날짜로 피드백 조회
       final dateStr =
-          '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+          '${_currentDate.year}-${_currentDate.month.toString().padLeft(2, '0')}-${_currentDate.day.toString().padLeft(2, '0')}';
 
       debugPrint('📋 피드백 조회 시작: $dateStr');
 
@@ -187,13 +187,10 @@ class FeedbackScreenState extends State<FeedbackScreen>
               _buildDateSelector(),
               const SizedBox(height: 24),
 
-              // 피드백 데이터가 없으면 빈 상태 표시
-              if (_aiFeedbackShort.isEmpty && !_isLoading)
-                Expanded(child: _buildEmptyState(colors))
-              else ...[
-                // 일간 AI 피드백 카드
-                Expanded(child: _buildInsightCard(colors)),
-              ],
+              // 피드백 카드는 커스텀 3D 스택 애니메이션과 함께 표시
+              Expanded(
+                child: _buildAnimatedCardStack(colors),
+              ),
               const SizedBox(height: 80),
             ],
           ),
@@ -215,9 +212,44 @@ class FeedbackScreenState extends State<FeedbackScreen>
     );
   }
 
+  /// 방향을 알기 위한 내부 변수
+  bool _isGoingBack = true;
+
+  /// 이전 날짜로 이동 (과거로)
+  void _goToPreviousDate() {
+    setState(() {
+      _isGoingBack = true;
+      _currentDate = _currentDate.subtract(const Duration(days: 1));
+    });
+    _loadDailyFeedback();
+  }
+
+  /// 다음 날짜로 이동 (미래로, 오늘까지만)
+  void _goToNextDate() {
+    final now = DateTime.now();
+    final nextDate = _currentDate.add(const Duration(days: 1));
+    
+    // 미래 날짜로는 이동 불가
+    if (nextDate.year > now.year || 
+        (nextDate.year == now.year && nextDate.month > now.month) || 
+        (nextDate.year == now.year && nextDate.month == now.month && nextDate.day > now.day)) {
+      return;
+    }
+
+    setState(() {
+      _isGoingBack = false;
+      _currentDate = nextDate;
+    });
+    _loadDailyFeedback();
+  }
+
   /// 날짜 선택 UI (Daily 배지 + 날짜 네비게이션)
   Widget _buildDateSelector() {
     final now = DateTime.now();
+    final isToday = _currentDate.year == now.year &&
+        _currentDate.month == now.month &&
+        _currentDate.day == now.day;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -242,16 +274,20 @@ class FeedbackScreenState extends State<FeedbackScreen>
         Row(
           children: [
             GestureDetector(
-              onTap: () {},
-              child: const Icon(
-                Icons.chevron_left_rounded,
-                color: Color(0xFF484846),
-                size: 24,
+              onTap: _goToPreviousDate,
+              behavior: HitTestBehavior.opaque,
+              child: const Padding(
+                padding: EdgeInsets.all(4.0),
+                child: Icon(
+                  Icons.chevron_left_rounded,
+                  color: Color(0xFF484846),
+                  size: 24,
+                ),
               ),
             ),
             const SizedBox(width: 8),
             Text(
-              '${now.month.toString().padLeft(2, '0')}월 ${now.day.toString().padLeft(2, '0')}일',
+              '${_currentDate.month.toString().padLeft(2, '0')}월 ${_currentDate.day.toString().padLeft(2, '0')}일',
               style: GoogleFonts.notoSansKr(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -261,11 +297,15 @@ class FeedbackScreenState extends State<FeedbackScreen>
             ),
             const SizedBox(width: 8),
             GestureDetector(
-              onTap: () {},
-              child: const Icon(
-                Icons.chevron_right_rounded,
-                color: Color(0xFF484846),
-                size: 24,
+              onTap: isToday ? null : _goToNextDate,
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Icon(
+                  Icons.chevron_right_rounded,
+                  color: isToday ? const Color(0xFFD9D9D9) : const Color(0xFF484846),
+                  size: 24,
+                ),
               ),
             ),
           ],
@@ -274,18 +314,16 @@ class FeedbackScreenState extends State<FeedbackScreen>
     );
   }
 
-  /// 빈 상태 위젯 (Figma 646:1225)
+  /// 빈 상태 위젯
   Widget _buildEmptyState(UphillColors colors) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // 빈 상태 이미지 (Mailbox)
-        // 실제 이미지가 없으므로 아이콘으로 대체, 추후 이미지 asset으로 교체 필요
         Container(
           width: 200,
           height: 200,
-          decoration: BoxDecoration(
-            color: const Color(0xFFC0CC90), // Figma 유사 색상
+          decoration: const BoxDecoration(
+            color: Color(0xFFC0CC90), 
             shape: BoxShape.circle,
           ),
           child: ClipOval(
@@ -305,7 +343,6 @@ class FeedbackScreenState extends State<FeedbackScreen>
           ),
         ),
         const SizedBox(height: 32),
-        // 안내 텍스트
         Text(
           '아직 도착한 피드백이 없어요.',
           style: GoogleFonts.notoSansKr(
@@ -315,25 +352,170 @@ class FeedbackScreenState extends State<FeedbackScreen>
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 100), // 시각적 중심 보정
+        const SizedBox(height: 100), 
       ],
     );
   }
 
-  /// 일간 인사이트 카드 위젯 (Figma 487:2499 Bottom Card)
-  Widget _buildInsightCard(UphillColors colors) {
-    // 로딩 상태
-    if (_isLoading) {
-      return _buildLoadingCard(colors);
-    }
+  /// 3D 스택 애니메이션을 관리하는 위젯
+  Widget _buildAnimatedCardStack(UphillColors colors) {
+    // 키 값으로 날짜 문자열 사용 (애니메이션 트리거 용도)
+    final dateKey = _currentDate.toIso8601String();
 
-    // 에러 상태
-    if (_errorMessage != null) {
-      return _buildErrorCard(colors);
-    }
+    return TweenAnimationBuilder<double>(
+      key: ValueKey(dateKey), // 날짜가 변하면 Tween이 0부터 다시 시작됨
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final maxWidth = constraints.maxWidth;
+            final maxHeight = constraints.maxHeight;
 
-    final now = DateTime.now();
+            // 뒷 배경 카드 크기 설정
+            final backWidth = maxWidth - 40;
+            final middleWidth = maxWidth - 20;
 
+            // 로딩이나 에러, 빈 상태 처리
+            Widget mainContent;
+            if (_isLoading) {
+              mainContent = _buildLoadingCard(colors);
+            } else if (_errorMessage != null) {
+              mainContent = _buildErrorCard(colors);
+            } else if (_aiFeedbackShort.isEmpty) {
+              mainContent = _buildEmptyState(colors);
+            } else {
+              mainContent = _buildMainInsightCardContent(colors);
+            }
+
+            // 과거로 이동 (맨 앞 카드가 벗겨지고, 뒤 카드들이 앞으로 다가옴)
+            if (_isGoingBack) {
+              // value: 0 -> 1 (애니메이션 진행도)
+              // 뒷 카드 (회색 배경) 크기/위치 애니메이션
+              final backToMiddleWidth = lerpDouble(backWidth - 20, backWidth, value) ?? backWidth;
+              final backToMiddleTop = lerpDouble(-10, 0, value) ?? 0.0;
+              
+              final middleToFrontWidth = lerpDouble(middleWidth - 20, maxWidth, value) ?? maxWidth;
+              final middleToFrontTopOffset = lerpDouble(10, 20, value) ?? 20.0;
+
+              // 맨 앞 카드는 어떻게 벗겨질 것인가? 
+              // -> 실제로는 '이전 날짜의 카드'가 맨 뒤에서부터 앞으로 밀려오는 듯한 효과
+              // 혹은 '현재(미래) 카드'가 위로 슬라이드 됨.
+              // 여기서는 데이터가 바뀌어 버렸으므로, 새로 그려지는 메인 카드는 
+              // 뒤에서부터(middle->front) 스케일업 되며 나타나도록 함.
+              
+              // 나가는 애니메이션을 위해서는 기존 카드를 기억하는 등 구조가 복잡해지므로,
+              // 간단하게 Tween 값에 따라 스택 구조 자체에 모션을 줍니다.
+
+              return Stack(
+                alignment: Alignment.topCenter,
+                children: [
+                   // 1번째 카드 (가장 뒤에서 생성되어 다가옴 - 투명도 변화)
+                   Positioned(
+                    top: backToMiddleTop,
+                    child: Opacity(
+                      opacity: value, // 0에서 1로 
+                      child: Container(
+                        width: backToMiddleWidth,
+                        height: maxHeight - 20,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD9D9D9),
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // 2번째 카드 (첫번째 회색 카드에서 두번째 중간 카드 위치로)
+                  Positioned(
+                    top: lerpDouble(0, 10, value),
+                    child: Container(
+                      width: lerpDouble(backWidth, middleWidth, value),
+                      height: maxHeight - 10,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFB5B5B5),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                  ),
+
+                  // 메인 카드 (중간 카드 위치에서 맨 앞 메인 카드 위치로)
+                  Positioned(
+                    top: middleToFrontTopOffset,
+                    child: Opacity(
+                      opacity: value < 0.2 ? value * 5 : 1.0, // 약간 늦게 나타나는 효과
+                      child: Transform.scale(
+                        scale: lerpDouble(0.9, 1.0, value),
+                        alignment: Alignment.topCenter,
+                        child: SizedBox(
+                          width: middleToFrontWidth,
+                          height: maxHeight - 20,
+                          child: mainContent,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            } 
+            // 미래로 이동 (위에서 새 카드가 떨어져 덮히고, 나머지는 뒤로 밀림)
+            else {
+               return Stack(
+                alignment: Alignment.topCenter,
+                children: [
+                  // 기존 2번째 카드 -> 맨 뒤로 감 (또는 사라짐)
+                  Positioned(
+                    top: lerpDouble(10, 0, value),
+                    child: Opacity(
+                      opacity: 1.0 - value, // 서서히 사라짐
+                      child: Container(
+                        width: lerpDouble(middleWidth, backWidth, value),
+                        height: maxHeight - 20,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD9D9D9),
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // 기존 프론트 카드 위치(모양) -> 중간 회색 띠로 밀려감
+                  Positioned(
+                    top: lerpDouble(20, 10, value),
+                    child: Container(
+                      width: lerpDouble(maxWidth, middleWidth, value),
+                      height: maxHeight - 10,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFB5B5B5),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                  ),
+
+                  // 새 메인 카드는 위에서부터 날아와서 덮음
+                  Positioned(
+                    top: 20,
+                    child: Transform.translate(
+                      offset: Offset(0, lerpDouble(-500.0, 0, value) ?? 0.0), // 천장에서 떨어짐
+                      child: SizedBox(
+                        width: maxWidth,
+                        height: maxHeight - 20,
+                        child: mainContent,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }
+          },
+        );
+      },
+    );
+  }
+
+  /// 실제 피드백 카드 콘텐츠 렌더링
+  Widget _buildMainInsightCardContent(UphillColors colors) {
     // 배경 이미지 프로바이더 결정
     ImageProvider? imageProvider;
     if (_backgroundImageUrl != null) {
@@ -362,6 +544,23 @@ class FeedbackScreenState extends State<FeedbackScreen>
       ),
       child: Stack(
         children: [
+          // 상단 더블 화살표 아이콘 (상단 중앙)
+          Align(
+            alignment: Alignment.topCenter,
+            child: GestureDetector(
+              onTap: _goToPreviousDate, // 위 화살표 누르면 날짜 넘어가며 애니메이션 발동
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 16, bottom: 16, left: 32, right: 32), 
+                child: Icon(
+                  Icons.keyboard_double_arrow_up_rounded,
+                  color: Colors.white.withValues(alpha: 0.3),
+                  size: 32,
+                ),
+              ),
+            ),
+          ),
+          
           Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -370,7 +569,7 @@ class FeedbackScreenState extends State<FeedbackScreen>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // New 배지
+                    // New/None 배지 및 텍스트는 임시 하드코딩
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
@@ -391,7 +590,7 @@ class FeedbackScreenState extends State<FeedbackScreen>
                     ),
                     // 날짜
                     Text(
-                      '${now.month}/${now.day.toString().padLeft(2, '0')}',
+                      '${_currentDate.month}/${_currentDate.day.toString().padLeft(2, '0')}',
                       style: GoogleFonts.montserrat(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -465,7 +664,6 @@ class FeedbackScreenState extends State<FeedbackScreen>
   Widget _buildLoadingCard(UphillColors colors) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: const Color(0xFF333333),
         borderRadius: BorderRadius.circular(30),
@@ -514,3 +712,4 @@ class FeedbackScreenState extends State<FeedbackScreen>
     );
   }
 }
+
