@@ -53,20 +53,25 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.black,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          '루틴 등록',
-          style: GoogleFonts.notoSans(
-            color: Colors.black,
+          '루틴 설정',
+          style: GoogleFonts.notoSansKr(
+            color: const Color(0xFF292B32),
             fontSize: 18,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.18,
           ),
         ),
         centerTitle: true,
@@ -76,121 +81,151 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
           children: [
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 10),
                     // Progress Bar (Step 3 - Full)
                     Row(
                       children: [
                         Expanded(
-                          child: Container(height: 4, color: Colors.black),
+                          child: Container(
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE3E3E0),
+                              borderRadius: BorderRadius.circular(1),
+                            ),
+                          ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Container(height: 4, color: Colors.black),
+                          child: Container(
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE3E3E0),
+                              borderRadius: BorderRadius.circular(1),
+                            ),
+                          ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Container(height: 4, color: Colors.black),
+                          child: Container(
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFC0C28D),
+                              borderRadius: BorderRadius.circular(1),
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 52),
                     Text(
-                      'IOT사물 연동\n설정해주세요',
-                      style: GoogleFonts.notoSans(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        height: 1.4,
+                      'IOT사물 연동을\n설정해주세요',
+                      style: GoogleFonts.notoSansKr(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w500,
+                        height: 1.5,
+                        letterSpacing: -0.3,
+                        color: const Color(0xFF292B32),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 40),
 
-                    // Floor Plan Placeholder
-                    // Figma design shows a specific floor plan. Using a placeholder for now.
+                    // Floor Plan Placeholder (Image placeholder)
                     Container(
                       width: double.infinity,
                       height: 200,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        border: Border.all(color: Colors.grey[300]!),
-                        borderRadius: BorderRadius.circular(8),
+                      decoration: const BoxDecoration(
+                        image: DecorationImage(
+                          image: AssetImage(
+                            'assets/images/floor_plan_placeholder.png',
+                          ), // Add proper image later
+                          fit: BoxFit.cover,
+                        ),
                       ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.apartment,
-                            size: 60,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            "공간 도면",
-                            style: TextStyle(color: Colors.grey[500]),
-                          ),
-                        ],
+                      child: Center(
+                        child: Text(
+                          "공간 도면 영역",
+                          style: TextStyle(color: Colors.grey[500]),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
 
                     // Space Solution
                     Text(
                       '공간 변경 솔루션',
-                      style: GoogleFonts.notoSans(
+                      style: GoogleFonts.notoSansKr(
                         fontSize: 14,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF484846),
+                        letterSpacing: -0.14,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey[200]!),
                       ),
-                      child: Column(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                '솔루션',
-                                style: GoogleFonts.notoSans(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '솔루션',
+                                  style: GoogleFonts.notoSansKr(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF484846),
+                                    letterSpacing: -0.14,
+                                  ),
                                 ),
-                              ),
-                              const Icon(
-                                Icons.edit,
-                                size: 16,
-                                color: Colors.grey,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '침대 옆 협탁을 치우고 요가매트를 깔아보세요',
-                            style: GoogleFonts.notoSans(
-                              fontSize: 14,
-                              color: Colors.grey[600],
+                                const SizedBox(height: 4),
+                                Text(
+                                  '침대 옆 협탁을 치우고 요가매트를 깔아보세요',
+                                  style: GoogleFonts.notoSansKr(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: const Color.fromRGBO(
+                                      136,
+                                      136,
+                                      128,
+                                      0.8,
+                                    ),
+                                    letterSpacing: -0.14,
+                                  ),
+                                ),
+                              ],
                             ),
+                          ),
+                          const Icon(
+                            Icons.edit_outlined,
+                            size: 20,
+                            color: Color(0xFF484846),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
 
                     // IoT Device List
                     Text(
-                      'IOT 연동',
-                      style: GoogleFonts.notoSans(
+                      '루틴 성격',
+                      style: GoogleFonts.notoSansKr(
                         fontSize: 14,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF484846),
+                        letterSpacing: -0.14,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -213,44 +248,49 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
                               children: [
                                 Text(
                                   'IOT 사물 (${index + 1})',
-                                  style: GoogleFonts.notoSans(
+                                  style: GoogleFonts.notoSansKr(
                                     fontSize: 14,
-                                    fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF484846),
+                                    letterSpacing: -0.14,
                                   ),
                                 ),
                                 if (_iotDevices.length > 1)
                                   GestureDetector(
                                     onTap: () => _removeIoTDevice(index),
                                     child: const Icon(
-                                      Icons.close,
+                                      Icons.close_rounded,
                                       size: 18,
-                                      color: Colors.grey,
+                                      color: Color(0xFFB3B3B3),
                                     ),
                                   ),
                               ],
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 20),
                             Row(
                               children: [
-                                SizedBox(
-                                  width: 60,
-                                  child: Text(
-                                    '사물 종류',
-                                    style: GoogleFonts.notoSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                Text(
+                                  '사물 종류',
+                                  style: GoogleFonts.notoSansKr(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF484846),
+                                    letterSpacing: -0.12,
                                   ),
                                 ),
-                                const SizedBox(width: 12),
+                                const SizedBox(width: 24),
                                 Expanded(
                                   child: Container(
+                                    height: 44,
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
+                                      horizontal: 16,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.grey[100],
-                                      borderRadius: BorderRadius.circular(8),
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: const Color(0xFFE6E6E6),
+                                      ),
                                     ),
                                     child: DropdownButtonHideUnderline(
                                       child: DropdownButton<String>(
@@ -261,8 +301,11 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
                                             value: type,
                                             child: Text(
                                               type,
-                                              style: GoogleFonts.notoSans(
-                                                fontSize: 14,
+                                              style: GoogleFonts.notoSansKr(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w500,
+                                                color: const Color(0xFF484846),
+                                                letterSpacing: -0.12,
                                               ),
                                             ),
                                           );
@@ -281,6 +324,22 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
                               ],
                             ),
                             if (device['type'] == '조명') ...[
+                              const SizedBox(height: 24),
+                              // Divider
+                              const Divider(
+                                color: Color(0xFFE6E6E6),
+                                height: 1,
+                              ),
+                              const SizedBox(height: 20),
+                              Text(
+                                '조명 설정',
+                                style: GoogleFonts.notoSansKr(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF484846),
+                                  letterSpacing: -0.12,
+                                ),
+                              ),
                               const SizedBox(height: 16),
                               Row(
                                 mainAxisAlignment:
@@ -288,35 +347,97 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
                                 children: [
                                   Text(
                                     '밝기',
-                                    style: GoogleFonts.notoSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  Text(
-                                    '최대 밝기', // Or dynamic based on value
-                                    style: GoogleFonts.notoSans(
+                                    style: GoogleFonts.notoSansKr(
                                       fontSize: 12,
-                                      fontWeight: FontWeight.bold,
+                                      fontWeight: FontWeight.w500,
+                                      color: const Color.fromRGBO(
+                                        136,
+                                        136,
+                                        128,
+                                        0.8,
+                                      ),
+                                      letterSpacing: -0.12,
                                     ),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 4),
-                              SizedBox(
-                                width: double.infinity,
-                                child: CupertinoSlider(
-                                  value: device['value'] as double,
-                                  min: 0,
-                                  max: 100,
-                                  activeColor: Colors.grey[600],
-                                  thumbColor: Colors.white,
-                                  onChanged: (val) {
-                                    setState(() {
-                                      device['value'] = val;
-                                    });
-                                  },
-                                ),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: CupertinoSlider(
+                                      value: device['value'] as double,
+                                      min: 0,
+                                      max: 100,
+                                      activeColor: const Color(0xFFE5EF9F),
+                                      thumbColor: Colors.white,
+                                      onChanged: (val) {
+                                        setState(() {
+                                          device['value'] = val;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${(device['value'] as double).toInt()}%',
+                                    style: GoogleFonts.notoSansKr(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: const Color(0xFF484846),
+                                      letterSpacing: -0.12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '색온도',
+                                    style: GoogleFonts.notoSansKr(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: const Color.fromRGBO(
+                                        136,
+                                        136,
+                                        128,
+                                        0.8,
+                                      ),
+                                      letterSpacing: -0.12,
+                                    ),
+                                  ),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 16,
+                                        height: 16,
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFFFFB84D),
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        '4,500K',
+                                        style: GoogleFonts.notoSansKr(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: const Color(0xFF484846),
+                                          letterSpacing: -0.12,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      const Icon(
+                                        Icons.keyboard_arrow_right_rounded,
+                                        color: Color(0xFFC6C5C3),
+                                        size: 16,
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ],
                           ],
@@ -328,24 +449,25 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
                     GestureDetector(
                       onTap: _addIoTDevice,
                       child: Container(
-                        height: 50,
+                        height: 56, // 50 -> 56
                         width: double.infinity,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: const Color(0xFFF8F8F8), // Same as bg
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: Colors.grey[300]!,
-                            style: BorderStyle
-                                .solid, // Dashed unsupported in standard container, using solid grey for now or custom painter if needed. keeping simple.
-                            // Actually user might want dashed. But solid grey light is okay.
+                            color: const Color(0xFFCCCCCC),
+                            style: BorderStyle.solid,
                           ),
                         ),
                         alignment: Alignment.center,
                         child: Text(
                           '+ IOT 연동 추가하기',
-                          style: GoogleFonts.notoSans(
-                            color: Colors.grey[600],
+                          style: GoogleFonts.notoSansKr(
+                            // notoSans -> Ks
+                            color: const Color(0xFF999999),
                             fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: -0.14,
                           ),
                         ),
                       ),
@@ -358,18 +480,16 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
 
             // Fixed Bottom Button
             Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
               child: SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
                   onPressed: _isSaving ? null : _saveRoutine,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(
-                      0xFF383B45,
-                    ), // Dark grey from design
+                    backgroundColor: const Color(0xFFB0B97C),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     elevation: 0,
                   ),
@@ -386,10 +506,10 @@ class _RoutineStep3ScreenState extends State<RoutineStep3Screen> {
                         )
                       : Text(
                           '완료',
-                          style: GoogleFonts.notoSans(
+                          style: GoogleFonts.notoSansKr(
                             color: Colors.white,
                             fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                 ),

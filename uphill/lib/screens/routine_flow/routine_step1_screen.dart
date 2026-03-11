@@ -22,20 +22,25 @@ class _RoutineStep1ScreenState extends State<RoutineStep1Screen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.black,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          '루틴 등록',
+          '루틴 설정',
           style: GoogleFonts.notoSansKr(
-            color: Colors.black,
+            color: const Color(0xFF292B32),
             fontSize: 18,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.18,
           ),
         ),
         centerTitle: true,
@@ -49,37 +54,49 @@ class _RoutineStep1ScreenState extends State<RoutineStep1Screen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 10),
                     // Progress Bar
                     Row(
                       children: [
                         Expanded(
-                          child: Container(height: 4, color: Colors.black),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
                           child: Container(
                             height: 4,
-                            color: const Color(0xFFE0E0E0),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFC0C28D),
+                              borderRadius: BorderRadius.circular(1),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Container(
                             height: 4,
-                            color: const Color(0xFFE0E0E0),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE3E3E0),
+                              borderRadius: BorderRadius.circular(1),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Container(
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE3E3E0),
+                              borderRadius: BorderRadius.circular(1),
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 52),
                     Text(
                       '어떤 루틴을\n진행할 예정이신가요?',
                       style: GoogleFonts.notoSansKr(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        height: 1.4,
-                        color: Colors.black,
+                        fontSize: 30, // 24 -> 30
+                        fontWeight: FontWeight.w500, // bold -> Medium(500)
+                        height: 1.5,
+                        letterSpacing: -0.3,
+                        color: const Color(0xFF292B32),
                       ),
                     ),
                     const SizedBox(height: 40),
@@ -102,33 +119,46 @@ class _RoutineStep1ScreenState extends State<RoutineStep1Screen> {
                           '목적',
                           style: GoogleFonts.notoSansKr(
                             fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFF666666),
+                            fontWeight: FontWeight.w500, // Medium
+                            color: const Color.fromRGBO(69, 69, 66, 0.8),
+                            letterSpacing: -0.14,
                           ),
                         ),
                         const Spacer(),
                         InkWell(
                           onTap: _showPurposeSelectionSheet,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12), // 8 -> 12
                           child: Container(
+                            width: 160,
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
+                              horizontal: 18,
                               vertical: 12,
                             ),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: const Color(0xFFE0E0E0),
+                                color: const Color(0xFFE6E6E6),
                               ),
                             ),
-                            child: Text(
-                              _selectedPurpose,
-                              style: GoogleFonts.notoSansKr(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.black,
-                              ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  _selectedPurpose,
+                                  style: GoogleFonts.notoSansKr(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: const Color(0xFF484846),
+                                    letterSpacing: -0.14,
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  color: Color(0xFF484846),
+                                  size: 16,
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -140,20 +170,45 @@ class _RoutineStep1ScreenState extends State<RoutineStep1Screen> {
                     _buildSectionLabel('루틴 진행 환경'),
                     const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE0E0E0)),
+                        borderRadius: BorderRadius.circular(12), // Figma 12px
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color.fromRGBO(
+                              0,
+                              0,
+                              0,
+                              0.04,
+                            ), // 0px_2px_8px_0px
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                          const BoxShadow(
+                            color: Color.fromRGBO(
+                              0,
+                              0,
+                              0,
+                              0.04,
+                            ), // 0px_0px_4px_0px
+                            blurRadius: 4,
+                            offset: Offset(0, 0),
+                          ),
+                        ],
                       ),
                       child: Row(
                         children: [
                           Text(
-                            '루틴환경',
+                            '루틴 환경',
                             style: GoogleFonts.notoSansKr(
                               fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black,
+                              fontWeight: FontWeight.w500, // Medium
+                              color: const Color.fromRGBO(69, 69, 66, 0.8),
+                              letterSpacing: -0.14,
                             ),
                           ),
                           const Spacer(),
@@ -161,35 +216,52 @@ class _RoutineStep1ScreenState extends State<RoutineStep1Screen> {
                             '공간',
                             style: GoogleFonts.notoSansKr(
                               fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black,
+                              fontWeight: FontWeight.w500, // Medium
+                              color: const Color.fromRGBO(69, 69, 66, 0.8),
+                              letterSpacing: -0.14,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 10), // gap 10
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            height: 48,
+                            width: 140, // 140 고정
+                            padding: const EdgeInsets.symmetric(horizontal: 18),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF5F5F5),
-                              borderRadius: BorderRadius.circular(8),
+                              color: Colors.white,
+                              border: Border.all(
+                                color: const Color(0xFFE6E6E6),
+                              ), // Gray border
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            child: DropdownButton<String>(
-                              value: _selectedSpace,
-                              underline: const SizedBox(),
-                              icon: const Icon(Icons.keyboard_arrow_down),
-                              items: _spaces.map((String value) {
-                                return DropdownMenuItem<String>(
-                                  value: value,
-                                  child: Text(
-                                    value,
-                                    style: GoogleFonts.notoSansKr(fontSize: 14),
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: (newValue) {
-                                if (newValue != null) {
-                                  setState(() => _selectedSpace = newValue);
-                                }
-                              },
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _selectedSpace,
+                                isExpanded: true, // 화살표 균등 배분
+                                icon: const Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  color: Color(0xFF484846),
+                                  size: 16,
+                                ),
+                                items: _spaces.map((String value) {
+                                  return DropdownMenuItem<String>(
+                                    value: value,
+                                    child: Text(
+                                      value,
+                                      style: GoogleFonts.notoSansKr(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: const Color(0xFF484846),
+                                        letterSpacing: -0.14,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (newValue) {
+                                  if (newValue != null) {
+                                    setState(() => _selectedSpace = newValue);
+                                  }
+                                },
+                              ),
                             ),
                           ),
                         ],
@@ -212,16 +284,16 @@ class _RoutineStep1ScreenState extends State<RoutineStep1Screen> {
             ),
             // Bottom Button
             Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
               child: SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
                   onPressed: _onNextPressed,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF333333),
+                    backgroundColor: const Color(0xFFB0B97C),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     elevation: 0,
                   ),
@@ -230,7 +302,7 @@ class _RoutineStep1ScreenState extends State<RoutineStep1Screen> {
                     style: GoogleFonts.notoSansKr(
                       color: Colors.white,
                       fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -247,8 +319,9 @@ class _RoutineStep1ScreenState extends State<RoutineStep1Screen> {
       text,
       style: GoogleFonts.notoSansKr(
         fontSize: 14,
-        fontWeight: FontWeight.bold,
-        color: Colors.black,
+        fontWeight: FontWeight.w600, // bold -> Semibold(600)
+        color: const Color(0xFF484846),
+        letterSpacing: -0.14,
       ),
     );
   }
@@ -261,24 +334,36 @@ class _RoutineStep1ScreenState extends State<RoutineStep1Screen> {
     return TextField(
       controller: controller,
       maxLines: maxLines,
+      style: GoogleFonts.notoSansKr(
+        fontSize: 16,
+        color: const Color(0xFF292B32),
+        fontWeight: FontWeight.w500,
+      ),
+      cursorColor: const Color(0xFF98A340), // 커서 색상을 앱 메인 컬러로 설정
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: GoogleFonts.notoSansKr(color: const Color(0xFFC6C5C3)),
+        hintStyle: GoogleFonts.notoSansKr(
+          color: const Color.fromRGBO(136, 136, 128, 0.8),
+          fontSize: 14, // 16 -> 14
+        ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: const Color(0xFFEEEEED), // 배경 변경
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+          borderRadius: BorderRadius.circular(14), // 12 -> 14
+          borderSide: const BorderSide(color: Color(0xFFE6E6E6)),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFFE6E6E6)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.black),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFF98A340)), // 포커스시 테두리 색상
         ),
-        contentPadding: const EdgeInsets.all(16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 16,
+        ),
       ),
     );
   }
@@ -289,6 +374,7 @@ class _RoutineStep1ScreenState extends State<RoutineStep1Screen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      backgroundColor: Colors.white,
       builder: (context) {
         return Container(
           padding: const EdgeInsets.all(24),
@@ -301,21 +387,36 @@ class _RoutineStep1ScreenState extends State<RoutineStep1Screen> {
                 style: GoogleFonts.notoSansKr(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
+                  color: const Color(0xFF292B32),
+                  letterSpacing: -0.18,
                 ),
               ),
               const SizedBox(height: 16),
-              ..._purposes.map(
-                (purpose) => ListTile(
-                  title: Text(purpose, style: GoogleFonts.notoSansKr()),
+              ..._purposes.map((purpose) {
+                final isSelected = _selectedPurpose == purpose;
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    purpose,
+                    style: GoogleFonts.notoSansKr(
+                      fontSize: 16,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w500,
+                      color: isSelected
+                          ? const Color(0xFF98A340)
+                          : const Color(0xFF292B32),
+                    ),
+                  ),
                   onTap: () {
                     setState(() => _selectedPurpose = purpose);
                     Navigator.pop(context);
                   },
-                  trailing: _selectedPurpose == purpose
-                      ? const Icon(Icons.check, color: Colors.blue)
+                  trailing: isSelected
+                      ? const Icon(Icons.check, color: Color(0xFF98A340))
                       : null,
-                ),
-              ),
+                );
+              }),
             ],
           ),
         );

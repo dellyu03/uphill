@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class RetrospectiveScreen extends StatelessWidget {
   const RetrospectiveScreen({super.key});
@@ -8,42 +9,49 @@ class RetrospectiveScreen extends StatelessWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: const Color(0xFFF8F8F8),
         body: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Custom Header
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
-                child: const Text(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+                child: Text(
                   'Feedback',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black,
-                    letterSpacing: -0.5,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF292B32),
+                    letterSpacing: -0.32,
                   ),
                 ),
               ),
               // Tab Bar
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: Container(
-                  height: 48,
+                  height: 44,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(22),
                   ),
-                  padding: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.all(3),
                   child: TabBar(
                     indicator: BoxDecoration(
-                      color: const Color(0xFF484848),
+                      color: const Color(0xFF555555),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     labelColor: Colors.white,
-                    unselectedLabelColor: Colors.grey,
-                    labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+                    unselectedLabelColor: const Color(0xFFB3B3B3),
+                    labelStyle: GoogleFonts.montserrat(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                    unselectedLabelStyle: GoogleFonts.montserrat(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
                     indicatorSize: TabBarIndicatorSize.tab,
                     dividerColor: Colors.transparent,
                     tabs: const [
@@ -70,9 +78,9 @@ class RetrospectiveScreen extends StatelessWidget {
           onPressed: () {
             // Add new retrospective
           },
-          backgroundColor: const Color(0xFF484848),
+          backgroundColor: const Color(0xFF555555),
           shape: const CircleBorder(),
-          elevation: 4,
+          elevation: 2,
           child: const Icon(Icons.add, color: Colors.white),
         ),
       ),
@@ -83,20 +91,13 @@ class RetrospectiveScreen extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       itemCount: 3,
-      separatorBuilder: (context, index) => const SizedBox(height: 20),
+      separatorBuilder: (context, index) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
         return Container(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(32),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(24),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,54 +109,58 @@ class RetrospectiveScreen extends StatelessWidget {
                     isWeekly
                         ? '2023. 10. Week ${4 - index}'
                         : '2023. 10. ${24 - index}',
-                    style: const TextStyle(
-                      color: Colors.black45,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                    style: GoogleFonts.notoSansKr(
+                      color: const Color(0xFFB3B3B3),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: -0.12,
                     ),
                   ),
-                  const Icon(Icons.more_horiz, color: Colors.black26),
+                  const Icon(
+                    Icons.more_horiz,
+                    color: Color(0xFFC6C5C3),
+                    size: 20,
+                  ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               // Image Placeholder
               Container(
-                height: 180,
+                height: 160,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF2F2F2),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Colors.black.withValues(alpha: 0.03),
-                  ),
+                  color: const Color(0xFFF0F0F0),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Center(
                   child: Icon(
                     Icons.image_outlined,
-                    color: Colors.black.withValues(alpha: 0.1),
-                    size: 48,
+                    color: Colors.grey[400],
+                    size: 40,
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               Text(
                 isWeekly ? 'Weekly Routine Review' : '오늘의 운동 루틴 회고',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                  letterSpacing: -0.5,
+                style: GoogleFonts.notoSansKr(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF292B32),
+                  letterSpacing: -0.16,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text(
                 isWeekly
                     ? '이번 주는 전체적으로 목표를 달성했다. 다음 주는 강도를 조금 더 높여보자.'
                     : '오늘은 컨디션이 좋아서 목표보다 더 많이 운동했다. 뿌듯하다.',
-                style: const TextStyle(
-                  color: Colors.black54,
+                style: GoogleFonts.notoSansKr(
+                  color: const Color(0xFFB3B3B3),
                   fontSize: 14,
-                  height: 1.6,
+                  fontWeight: FontWeight.w400,
+                  height: 1.5,
+                  letterSpacing: -0.14,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,

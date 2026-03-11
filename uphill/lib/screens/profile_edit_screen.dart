@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/dummy_auth_service.dart';
 
 class ProfileEditScreen extends StatefulWidget {
@@ -30,20 +30,27 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).extension<UphillColors>()!;
-
     return Scaffold(
-      backgroundColor: colors.bgMain,
+      backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Color(0xFF292B32),
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           '프로필 수정',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          style: GoogleFonts.notoSansKr(
+            color: const Color(0xFF292B32),
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+            letterSpacing: -0.16,
+          ),
         ),
         centerTitle: true,
         actions: [
@@ -51,19 +58,19 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             onPressed: () async {
               await _authService.updateProfile(
                 name: _nameController.text.trim(),
-                picture:
-                    _profileImageUrl, // Send current (or updated) image URL
+                picture: _profileImageUrl,
               );
               if (context.mounted) {
                 Navigator.pop(context);
               }
             },
-            child: const Text(
+            child: Text(
               '완료',
-              style: TextStyle(
-                color: Colors.blue, // Or use a theme color
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
+              style: GoogleFonts.notoSansKr(
+                color: const Color(0xFF555555),
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                letterSpacing: -0.14,
               ),
             ),
           ),

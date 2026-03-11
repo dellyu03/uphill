@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/routine_service.dart';
+import '../models/routine.dart';
 
 class RoutineInProgressScreen extends StatefulWidget {
   final String routineId;
@@ -20,7 +21,7 @@ class RoutineInProgressScreen extends StatefulWidget {
 
 class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
   final RoutineService _routineService = RoutineService();
-  late Future<Map<String, dynamic>> _routineFuture;
+  late Future<Routine> _routineFuture;
 
   // Timer State
   Timer? _timer;
@@ -58,7 +59,7 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
     try {
       // Fetch data to calculate duration from scheduled time
       final data = await _routineFuture;
-      final timeStr = data['time'] as String? ?? '00:00';
+      final timeStr = data.time ?? '00:00';
       final now = DateTime.now();
       final parts = timeStr.split(':');
       final hour = int.parse(parts[0]);
@@ -126,10 +127,13 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(
-        context,
-      ).scaffoldBackgroundColor, // Updated to #FBFBFB
-      body: FutureBuilder<Map<String, dynamic>>(
+      backgroundColor: const Color(0xFFF8F8F8), // Updated to #F8F8F8
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        toolbarHeight: 0, // Hide default app bar space to use Stack properly
+      ),
+      body: FutureBuilder<Routine>(
         future: _routineFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -138,9 +142,12 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
             return Center(child: Text('오류 발생: ${snapshot.error}'));
           }
 
-          final data = snapshot.data ?? {};
-          final title = data['title'] ?? widget.title;
-          final space = data['space'] ?? '공간';
+          if (!snapshot.hasData) {
+            return const Center(child: Text('루틴 정보를 불러올 수 없습니다.'));
+          }
+          final data = snapshot.data!;
+          final title = data.title;
+          final space = data.space ?? '공간';
 
           final solutionText = _getSpaceSolution(space);
           final spaceImage = _getSpaceImage(space);
@@ -160,45 +167,40 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            const SizedBox(
+                              height: 20,
+                            ), // Top margin down from SafeArea
                             // Badge: "현재 루틴"
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
+                                horizontal: 16,
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFD8E29C),
-                                borderRadius: BorderRadius.circular(20),
+                                color: const Color(
+                                  0xFFE5EF9F,
+                                ), // Updated Background Color
+                                borderRadius: BorderRadius.circular(16),
                               ),
                               child: Text(
                                 '현재 루틴',
                                 style: GoogleFonts.notoSansKr(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.black,
+                                  color: const Color(0xFF292B32),
+                                  letterSpacing: -0.1,
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            // Subtitle: "진행 중인 루틴"
-                            Text(
-                              '진행 중인 루틴',
-                              style: GoogleFonts.notoSansKr(
-                                fontSize: 18,
-                                color: const Color(
-                                  0x66555151,
-                                ), // approx 0.4 opacity
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 16),
                             // Title: Routine Name
                             Text(
                               title,
                               style: GoogleFonts.notoSansKr(
-                                fontSize: 29,
+                                fontSize: 24,
                                 fontWeight: FontWeight.bold,
                                 color: const Color(0xFF555151),
+                                letterSpacing: -0.24,
                                 height: 1.4,
                               ),
                             ),
@@ -206,82 +208,63 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 40),
-
+                      const SizedBox(height: 20), // 40 -> 20
                       // 1. Space Image (Dynamic based on space)
                       Center(
                         child: Container(
-                          width: 336,
-                          height: 293,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(
-                              30,
-                            ), // Soft rounded corners
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 20,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(30),
-                            child: Image.asset(
-                              spaceImage,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                // Fallback if image not found
-                                return Image.asset(
-                                  'assets/images/google_icon.png', // Temporary safe fallback or simply a colored box
-                                  fit: BoxFit.cover,
-                                );
-                              },
-                            ),
+                          width: double
+                              .infinity, // Expand to take max width available (padding will constrain)
+                          height: 293, // maintain height
+                          child: Image.asset(
+                            spaceImage,
+                            fit: BoxFit
+                                .contain, // cover -> contain to respect layout like the figma design
+                            errorBuilder: (context, error, stackTrace) {
+                              // Fallback if image not found
+                              return Image.asset(
+                                'assets/images/google_icon.png', // Temporary safe fallback or simply a colored box
+                                fit: BoxFit.contain,
+                              );
+                            },
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 40),
-
+                      const SizedBox(height: 32), // 40 -> 32
                       // 2. Solution Card (Dynamic text)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: Container(
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 26,
+                            horizontal: 24,
                             vertical: 24,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF8F8F8),
-                            borderRadius: BorderRadius.circular(22),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
-                                blurRadius: 4,
-                                offset: const Offset(0, 1),
-                              ),
-                            ],
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '$space 루틴 솔루션', // Adapting title
+                                '공간 변경 루틴 솔루션', // Adapting title
                                 style: GoogleFonts.notoSansKr(
                                   fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xE6515151), // 0.9 opacity
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF666666),
+                                  letterSpacing: -0.16,
                                 ),
                               ),
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 12),
                               Text(
                                 solutionText, // Providing actionable text based on space
                                 style: GoogleFonts.notoSansKr(
                                   fontSize: 14,
-                                  color: const Color(0x99515151), // 0.6 opacity
-                                  height: 1.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFFB3B3B3),
+                                  letterSpacing: -0.14,
+                                  height: 1.57, // 22px / 14px
                                 ),
                               ),
                             ],
@@ -289,8 +272,7 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 40),
-
+                      const SizedBox(height: 60), // 40 -> 60
                       // Bottom Section
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -298,18 +280,19 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '시작 시간',
+                              '종료 시간', // 시작 시간 -> 종료 시간
                               style: GoogleFonts.notoSansKr(
-                                fontSize: 18,
-                                color: const Color(0x99000000),
+                                fontSize: 16,
+                                color: const Color(0xFF666666),
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: -0.16,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 8),
                             Builder(
                               builder: (context) {
                                 // Parse Start Time from 'time' field (e.g. "07:00")
-                                final timeStr =
-                                    data['time'] as String? ?? '00:00';
+                                final timeStr = data.time ?? '00:00';
                                 final now = DateTime.now();
                                 final parts = timeStr.split(':');
                                 final hour = int.parse(parts[0]);
@@ -336,23 +319,24 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        // Start Time (Black)
+                                        // End Time (Black)
                                         Text(
                                           _formatDateTime(routineStartTime),
                                           style: GoogleFonts.inter(
-                                            fontSize: 30,
+                                            fontSize: 32,
                                             fontWeight: FontWeight.w600,
-                                            color: Colors
-                                                .black, // Explicitly Black
+                                            color: const Color(0xFF4D4D4D),
+                                            letterSpacing: -0.64,
                                           ),
                                         ),
                                         // Elapsed Time (Red)
                                         Text(
                                           '+${(elapsed.inMinutes).toString()}m',
                                           style: GoogleFonts.inter(
-                                            fontSize: 18,
+                                            fontSize: 16,
                                             color: const Color(0xFFFF6E6E),
-                                            fontWeight: FontWeight.w500,
+                                            fontWeight: FontWeight.w400,
+                                            letterSpacing: -0.16,
                                           ),
                                         ),
                                       ],
@@ -362,19 +346,22 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
                                           ? null
                                           : _handleComplete,
                                       child: Container(
-                                        width: 81,
-                                        height: 46,
+                                        width: 80,
+                                        height: 44,
                                         alignment: Alignment.center,
+                                        margin: const EdgeInsets.only(
+                                          bottom: 12,
+                                        ),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFF4E4E4E),
+                                          color: const Color(0xFF555555),
                                           borderRadius: BorderRadius.circular(
-                                            23,
+                                            22,
                                           ),
                                         ),
                                         child: _isCompleting
                                             ? const SizedBox(
-                                                width: 20,
-                                                height: 20,
+                                                width: 16,
+                                                height: 16,
                                                 child:
                                                     CircularProgressIndicator(
                                                       color: Colors.white,
@@ -384,9 +371,10 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
                                             : Text(
                                                 '완료',
                                                 style: GoogleFonts.notoSansKr(
-                                                  fontSize: 18,
+                                                  fontSize: 14,
                                                   fontWeight: FontWeight.w500,
                                                   color: Colors.white,
+                                                  letterSpacing: -0.14,
                                                 ),
                                               ),
                                       ),
@@ -407,12 +395,16 @@ class _RoutineInProgressScreenState extends State<RoutineInProgressScreen> {
               // Back Button (Floating)
               Positioned(
                 top: 50,
-                left: 20,
+                right: 20, // left -> right
                 child: GestureDetector(
                   onTap: () => Navigator.pop(context),
                   child: const Padding(
                     padding: EdgeInsets.all(8.0),
-                    child: Icon(Icons.arrow_back_ios, color: Colors.black54),
+                    child: Icon(
+                      Icons.close_rounded,
+                      color: Color(0xFF292B32),
+                      size: 24,
+                    ), // arrow_back_ios -> close
                   ),
                 ),
               ),

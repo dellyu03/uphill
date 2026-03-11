@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/dummy_auth_service.dart';
 import 'onboarding/login_screen.dart';
 import 'profile_edit_screen.dart';
@@ -14,19 +14,23 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).extension<UphillColors>()!;
     final authService = DummyAuthService();
     final userInfo = authService.userInfo;
 
     return Scaffold(
-      backgroundColor: colors.bgMain,
+      backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
         surfaceTintColor: Colors.transparent,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
+        title: Text(
           '마이페이지',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          style: GoogleFonts.notoSansKr(
+            color: const Color(0xFF292B32),
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+            letterSpacing: -0.16,
+          ),
         ),
         centerTitle: true,
       ),
@@ -71,20 +75,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 16),
                   Text(
                     userInfo?['name'] ?? '사용자',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+                    style: GoogleFonts.notoSansKr(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF292B32),
+                      letterSpacing: -0.22,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     userInfo?['email'] ?? '',
-                    style: const TextStyle(color: Colors.grey, fontSize: 14),
+                    style: GoogleFonts.notoSansKr(
+                      color: const Color(0xFFB3B3B3),
+                      fontSize: 14,
+                      letterSpacing: -0.14,
+                    ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     '오늘도 힘차게 오르고 있습니다!',
-                    style: TextStyle(color: Colors.grey, fontSize: 14),
+                    style: GoogleFonts.notoSansKr(
+                      color: const Color(0xFFB3B3B3),
+                      fontSize: 14,
+                      letterSpacing: -0.14,
+                    ),
                   ),
                 ],
               ),
@@ -150,10 +164,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
+          style: GoogleFonts.notoSansKr(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF292B32),
+            letterSpacing: -0.16,
           ),
         ),
         const SizedBox(height: 12),
@@ -170,9 +185,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildListTile(IconData icon, String title, {VoidCallback? onTap}) {
     return ListTile(
-      leading: Icon(icon, color: Colors.black),
-      title: Text(title),
-      trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+      leading: Icon(icon, color: const Color(0xFF484846), size: 22),
+      title: Text(
+        title,
+        style: GoogleFonts.notoSansKr(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: const Color(0xFF484846),
+          letterSpacing: -0.14,
+        ),
+      ),
+      trailing: const Icon(
+        Icons.chevron_right,
+        color: Color(0xFFC6C5C3),
+        size: 20,
+      ),
       onTap: onTap ?? () {},
     );
   }

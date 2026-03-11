@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'onboarding_step5_screen.dart';
+import '../../services/dummy_auth_service.dart';
+import '../../main_scaffold.dart';
 
-/// 온보딩 Step 4: 아침 시작 시간 설정
-class OnboardingStep4Screen extends StatefulWidget {
-  const OnboardingStep4Screen({super.key});
+/// 온보딩 Step 5: 저녁 마무리 시간 설정
+class OnboardingStep5Screen extends StatefulWidget {
+  const OnboardingStep5Screen({super.key});
 
   @override
-  State<OnboardingStep4Screen> createState() => _OnboardingStep4ScreenState();
+  State<OnboardingStep5Screen> createState() => _OnboardingStep5ScreenState();
 }
 
-class _OnboardingStep4ScreenState extends State<OnboardingStep4Screen> {
-  int _selectedHour = 9;
+class _OnboardingStep5ScreenState extends State<OnboardingStep5Screen> {
+  int _selectedHour = 10;
   int _selectedMinute = 0;
-  String _selectedPeriod = 'AM';
+  String _selectedPeriod = 'PM';
+
+  final DummyAuthService _authService = DummyAuthService();
 
   void _onHourChanged(int index) {
     setState(() {
@@ -33,26 +36,33 @@ class _OnboardingStep4ScreenState extends State<OnboardingStep4Screen> {
     });
   }
 
-  void _goToNextStep() {
+  Future<void> _completeOnboarding() async {
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
-    final updatedArgs = {
-      ...?args,
-      'morningStartTime': {
+    final onboardingData = {
+      'name': args?['name'] ?? '사용자',
+      'age': args?['age'] ?? 0,
+      'gender': args?['gender'] ?? '미설정',
+      'hasCamera': args?['hasCamera'] ?? false,
+      'morningStartTime': args?['morningStartTime'],
+      'eveningEndTime': {
         'hour': _selectedHour,
         'minute': _selectedMinute,
         'period': _selectedPeriod,
       },
+      'completedAt': DateTime.now().toIso8601String(),
     };
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const OnboardingStep5Screen(),
-        settings: RouteSettings(arguments: updatedArgs),
-      ),
-    );
+    await _authService.completeOnboarding(onboardingData: onboardingData);
+
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const MainScaffold()),
+        (route) => false,
+      );
+    }
   }
 
   @override
@@ -93,7 +103,7 @@ class _OnboardingStep4ScreenState extends State<OnboardingStep4Screen> {
                     _buildTopBar(),
                     const SizedBox(height: 32),
                     Text(
-                      '아침은\n몇시에 시작하나요?',
+                      '저녁은\n몇시에 마무리하나요?',
                       style: GoogleFonts.notoSansKr(
                         fontSize: 32,
                         fontWeight: FontWeight.w500,
@@ -135,6 +145,7 @@ class _OnboardingStep4ScreenState extends State<OnboardingStep4Screen> {
   }
 
   Widget _buildProgressBar() {
+    // 3칸 모두 녹색 (마지막 단계)
     return Row(
       children: [
         Expanded(
@@ -161,7 +172,7 @@ class _OnboardingStep4ScreenState extends State<OnboardingStep4Screen> {
           child: Container(
             height: 4.5,
             decoration: BoxDecoration(
-              color: const Color(0xFFD9D9D9).withValues(alpha: 0.8),
+              color: const Color(0xFFB8D761),
               borderRadius: BorderRadius.circular(2.25),
             ),
           ),
@@ -226,7 +237,7 @@ class _OnboardingStep4ScreenState extends State<OnboardingStep4Screen> {
   Widget _buildTimeItem(String text, bool isSelected) {
     return Center(
       child: Container(
-        width: 100, // Matching padding logic of Figma
+        width: 100,
         height: 56,
         decoration: isSelected
             ? BoxDecoration(
@@ -274,7 +285,7 @@ class _OnboardingStep4ScreenState extends State<OnboardingStep4Screen> {
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
-        onPressed: _goToNextStep,
+        onPressed: _completeOnboarding,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.white,
           foregroundColor: const Color(0xFF9CAA7D),
@@ -284,7 +295,7 @@ class _OnboardingStep4ScreenState extends State<OnboardingStep4Screen> {
           ),
         ),
         child: Text(
-          '다음으로',
+          '선택완료',
           style: GoogleFonts.notoSansKr(
             fontSize: 16,
             fontWeight: FontWeight.w600,

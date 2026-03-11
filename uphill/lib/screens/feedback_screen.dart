@@ -170,7 +170,7 @@ class FeedbackScreenState extends State<FeedbackScreen>
 
     // 메인 스캐폴드
     return Scaffold(
-      backgroundColor: colors.bgMain,
+      backgroundColor: const Color(0xFFF8F8F8),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(
@@ -182,15 +182,15 @@ class FeedbackScreenState extends State<FeedbackScreen>
               const SizedBox(height: 20),
               // 헤더 - "Feedback" 타이틀
               _buildHeader(),
+              const SizedBox(height: 16),
+              // Daily 배지 + 날짜 선택
+              _buildDateSelector(),
               const SizedBox(height: 24),
 
               // 피드백 데이터가 없으면 빈 상태 표시
               if (_aiFeedbackShort.isEmpty && !_isLoading)
                 Expanded(child: _buildEmptyState(colors))
               else ...[
-                // 주간 피드백 카드
-                _buildWeeklyCard(colors),
-                const SizedBox(height: 16),
                 // 일간 AI 피드백 카드
                 Expanded(child: _buildInsightCard(colors)),
               ],
@@ -205,12 +205,72 @@ class FeedbackScreenState extends State<FeedbackScreen>
   /// 헤더 위젯
   Widget _buildHeader() {
     return Text(
-      TextConstants.feedbackTitle,
+      'Feedback',
       style: GoogleFonts.montserrat(
-        fontSize: 40,
+        fontSize: 32,
         fontWeight: FontWeight.w600,
-        color: const Color(0xFF555151),
+        color: const Color(0xFF292B32),
+        letterSpacing: -0.32,
       ),
+    );
+  }
+
+  /// 날짜 선택 UI (Daily 배지 + 날짜 네비게이션)
+  Widget _buildDateSelector() {
+    final now = DateTime.now();
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        // Daily 배지
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE5EF9F),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Text(
+            'Daily',
+            style: GoogleFonts.montserrat(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF292B32),
+              letterSpacing: -0.12,
+            ),
+          ),
+        ),
+        // 날짜 선택 영역
+        Row(
+          children: [
+            GestureDetector(
+              onTap: () {},
+              child: const Icon(
+                Icons.chevron_left_rounded,
+                color: Color(0xFF484846),
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '${now.month.toString().padLeft(2, '0')}월 ${now.day.toString().padLeft(2, '0')}일',
+              style: GoogleFonts.notoSansKr(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF292B32),
+                letterSpacing: -0.16,
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () {},
+              child: const Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFF484846),
+                size: 24,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -257,72 +317,6 @@ class FeedbackScreenState extends State<FeedbackScreen>
         ),
         const SizedBox(height: 100), // 시각적 중심 보정
       ],
-    );
-  }
-
-  /// 주간 피드백 카드 위젯 (Figma 487:2499 Top Card)
-  Widget _buildWeeklyCard(UphillColors colors) {
-    // Figma 상 날짜 예시: 12 04
-    final now = DateTime.now();
-    final dateDisplay =
-        '${now.month.toString().padLeft(2, '0')} ${now.day.toString().padLeft(2, '0')}';
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFD9D9D9), // Figma Design Color
-        borderRadius: BorderRadius.circular(30), // Figma Radius
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 날짜 텍스트
-          Text(
-            dateDisplay,
-            style: GoogleFonts.montserrat(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF636363),
-            ),
-          ),
-          const SizedBox(height: 4),
-          // "Weekly feedback" 타이틀
-          Text(
-            'Weekly feedback',
-            style: GoogleFonts.montserrat(
-              fontSize: 24,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF636363),
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 20),
-          // Check 버튼
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF434343), // Figma Design Color
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                elevation: 0,
-              ),
-              child: Text(
-                'Check',
-                style: GoogleFonts.montserrat(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -383,7 +377,7 @@ class FeedbackScreenState extends State<FeedbackScreen>
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF6A7154).withOpacity(0.9),
+                        color: const Color(0xFF6A7154).withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -429,7 +423,7 @@ class FeedbackScreenState extends State<FeedbackScreen>
                       : '루틴을 수행하면 더 정확한 피드백을 받을 수 있어요.',
                   style: GoogleFonts.notoSansKr(
                     fontSize: 14,
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                     height: 1.5,
                   ),
                   maxLines: 3,
@@ -443,7 +437,7 @@ class FeedbackScreenState extends State<FeedbackScreen>
                   child: Row(
                     children: [
                       Text(
-                        '피드백 더보기',
+                        '더보기',
                         style: GoogleFonts.notoSansKr(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,

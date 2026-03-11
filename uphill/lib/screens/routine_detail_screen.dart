@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/routine_service.dart';
+import '../models/routine.dart';
 import 'routine_edit_screen.dart';
-import 'routine_in_progress_screen.dart';
 
 class RoutineDetailScreen extends StatefulWidget {
   final String routineId;
@@ -20,7 +21,7 @@ class RoutineDetailScreen extends StatefulWidget {
 }
 
 class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
-  late Future<Map<String, dynamic>> _routineFuture;
+  late Future<Routine> _routineFuture;
 
   @override
   void initState() {
@@ -37,11 +38,9 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(
-        context,
-      ).scaffoldBackgroundColor, // Figma Background
+      backgroundColor: const Color(0xFFF8F8F8),
       appBar: _buildAppBar(),
-      body: FutureBuilder<Map<String, dynamic>>(
+      body: FutureBuilder<Routine>(
         future: _routineFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -53,14 +52,14 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
           }
 
           final data = snapshot.data!;
-          final title = data['title'] ?? widget.title;
-          final purpose = data['purpose'] ?? '운동';
-          final description = data['description'] ?? '설명이 없습니다.';
-          final space = data['space'] ?? '설정되지 않음';
-          final days = List<int>.from(data['days'] ?? []);
+          final title = data.title;
+          final purpose = data.purpose ?? '운동';
+          final description = data.description ?? '설명이 없습니다.';
+          final space = data.space ?? '설정되지 않음';
+          final days = data.days;
 
-          final startTime = data['time'] ?? '00:00';
-          final endTime = data['end_time'] ?? '00:00';
+          final startTime = data.time ?? '00:00';
+          final endTime = data.endTime ?? '00:00';
 
           return Stack(
             children: [
@@ -73,25 +72,38 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                     const SizedBox(height: 10),
                     // 1. Header Area
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            '루틴 상세',
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.black.withValues(alpha: 0.6),
-                              fontWeight: FontWeight.w400,
+                          // Badge: "생성된 루틴"
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE5EF9F),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                              '생성된 루틴',
+                              style: GoogleFonts.notoSansKr(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF292B32),
+                                letterSpacing: -0.1,
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 16),
                           Text(
                             title,
-                            style: const TextStyle(
-                              fontSize: 29,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black,
+                            style: GoogleFonts.notoSansKr(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF292B32),
+                              letterSpacing: -0.24,
                               height: 1.4,
                             ),
                           ),
@@ -99,89 +111,96 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 12),
 
                     // 2. Info Area (Purpose, Description)
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             '목적 | $purpose',
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: GoogleFonts.notoSansKr(
+                              fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: Colors.black,
+                              color: const Color(0xFF484846),
+                              letterSpacing: -0.12,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           Text(
                             description,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.black,
-                              height: 1.4,
+                            style: GoogleFonts.notoSansKr(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                              color: const Color.fromRGBO(136, 136, 128, 0.8),
+                              letterSpacing: -0.12,
+                              height: 1.5,
                             ),
                           ),
                         ],
                       ),
                     ),
 
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 32),
 
                     // 3. Visual Section (Image + Graphics)
                     _buildVisualSection(),
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 20),
 
                     // 4. Environment
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 35.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             '루틴환경',
-                            style: TextStyle(
+                            style: GoogleFonts.notoSansKr(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: Colors.black,
+                              color: const Color(0xFF484846),
+                              letterSpacing: -0.14,
                             ),
                           ),
                           Text(
                             space,
-                            style: const TextStyle(
+                            style: GoogleFonts.notoSansKr(
                               fontSize: 14,
-                              color: Color(0xFF363636),
+                              fontWeight: FontWeight.w400,
+                              color: const Color(0xFF484846),
+                              letterSpacing: -0.14,
                             ),
                           ),
                         ],
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
                     // 5. Solution Card
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 18.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
                       child: _buildSolutionCard(),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 32),
 
                     // 6. Time & Repeat Card
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             '루틴 지속 시간',
-                            style: TextStyle(
+                            style: GoogleFonts.notoSansKr(
                               fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF484846),
+                              letterSpacing: -0.16,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -191,127 +210,11 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                     ),
 
                     const SizedBox(height: 24),
-
-                    // 7. Delete Button
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: OutlinedButton(
-                          onPressed: () async {
-                            final confirmed = await showDialog<bool>(
-                              context: context,
-                              builder: (BuildContext dialogContext) {
-                                return AlertDialog(
-                                  title: const Text('루틴 삭제'),
-                                  content: Text('"$title" 루틴을 삭제하시겠습니까?'),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.pop(dialogContext, false),
-                                      child: const Text('취소'),
-                                    ),
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.pop(dialogContext, true),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: Colors.red,
-                                      ),
-                                      child: const Text('삭제'),
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-
-                            if (confirmed == true && context.mounted) {
-                              try {
-                                await RoutineService().deleteRoutine(
-                                  widget.routineId,
-                                );
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('루틴이 삭제되었습니다'),
-                                      backgroundColor: Colors.green,
-                                    ),
-                                  );
-                                  Navigator.pop(context, true);
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('삭제 실패: $e'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                              }
-                            }
-                          },
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(
-                              color: Colors.red,
-                              width: 1.5,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            '루틴 삭제하기',
-                            style: TextStyle(
-                              color: Colors.red,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
 
-              // Floating Button
-              Positioned(
-                left: 24,
-                right: 24,
-                bottom: 34,
-                child: SizedBox(
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => RoutineInProgressScreen(
-                            routineId: widget.routineId,
-                            title: title,
-                          ),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      '루틴 시작하기',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+              // Floating Button - removed for this design as Figma doesn't show it prominently
             ],
           );
         },
@@ -326,15 +229,23 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
       elevation: 0,
       centerTitle: false,
       leading: Padding(
-        padding: const EdgeInsets.only(left: 10),
+        padding: const EdgeInsets.only(left: 4),
         child: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Color(0xFF292B32),
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.edit_outlined, color: Colors.black),
+          icon: const Icon(
+            Icons.edit_outlined,
+            color: Color(0xFF292B32),
+            size: 22,
+          ),
           onPressed: () {
             Navigator.push(
               context,
@@ -352,46 +263,98 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
             });
           },
         ),
-        const SizedBox(width: 10),
+        IconButton(
+          icon: const Icon(
+            Icons.delete_outline_rounded,
+            color: Color(0xFF292B32),
+            size: 22,
+          ),
+          onPressed: () async {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (BuildContext dialogContext) {
+                return AlertDialog(
+                  title: const Text('루틴 삭제'),
+                  content: Text('"${widget.title}" 루틴을 삭제하시겠습니까?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext, false),
+                      child: const Text('취소'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext, true),
+                      style: TextButton.styleFrom(foregroundColor: Colors.red),
+                      child: const Text('삭제'),
+                    ),
+                  ],
+                );
+              },
+            );
+            if (confirmed == true && mounted) {
+              try {
+                await RoutineService().deleteRoutine(widget.routineId);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('루틴이 삭제되었습니다'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                  Navigator.pop(context, true);
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('삭제 실패: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            }
+          },
+        ),
+        const SizedBox(width: 8),
       ],
     );
   }
 
   Widget _buildVisualSection() {
     return SizedBox(
-      height: 350,
+      width: double.infinity,
+      height: 280,
       child: Center(
-        child: Container(
-          width: 291,
-          height: 253,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF5F5F5), // Light grey placeholder
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+        child: Image.asset(
+          'assets/images/floor_plan.png',
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              width: 291,
+              height: 253,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0F0F0),
+                borderRadius: BorderRadius.circular(16),
               ),
-            ],
-          ),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.image_not_supported_outlined,
-                  size: 40,
-                  color: Colors.grey[400],
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.image_not_supported_outlined,
+                      size: 40,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '이미지 준비중',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  '이미지 준비중',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -400,36 +363,32 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
   Widget _buildSolutionCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
+        children: [
           Text(
             '공간 변경 루틴 솔루션',
-            style: TextStyle(
+            style: GoogleFonts.notoSansKr(
               fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF171717),
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF666666),
+              letterSpacing: -0.16,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             '더욱 원활한 운동을 위해 침대 앞 협탁을 책상 쪽으로 치우고, 요가 매트를 깔아 보세요.',
-            style: TextStyle(
-              fontSize: 15,
-              height: 1.5,
-              color: Color.fromRGBO(0, 0, 0, 0.6),
+            style: GoogleFonts.notoSansKr(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFFB3B3B3),
+              letterSpacing: -0.14,
+              height: 1.57,
             ),
           ),
         ],
@@ -438,44 +397,69 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
   }
 
   Widget _buildTimeCard(String start, String end, String days) {
+    final dayNames = ['월', '화', '수', '목', '금', '토', '일'];
+    final activeDays = days.split(', ');
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE5E5E5)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
+          // Repeat Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                '루틴 지속 시간',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              Text(
+                '반복',
+                style: GoogleFonts.notoSansKr(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF484846),
+                  letterSpacing: -0.14,
+                ),
               ),
               Row(
                 children: [
-                  _buildTimeBox(start),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Text(
-                      '~',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
+                  ...dayNames.map((day) {
+                    final isActive = activeDays.contains(day) || days == '매일';
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 6),
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: isActive
+                              ? const Color(0xFFE5EF9F)
+                              : Colors.transparent,
+                          shape: BoxShape.circle,
+                          border: isActive
+                              ? null
+                              : Border.all(color: const Color(0xFFE6E6E6)),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          day,
+                          style: GoogleFonts.notoSansKr(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: isActive
+                                ? const Color(0xFF484846)
+                                : const Color(0xFFB3B3B3),
+                          ),
+                        ),
                       ),
-                    ),
+                    );
+                  }),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: Color(0xFFC6C5C3),
+                    size: 20,
                   ),
-                  _buildTimeBox(end),
                 ],
               ),
             ],
@@ -483,48 +467,41 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
           const SizedBox(height: 16),
           const Divider(height: 1, color: Color(0xFFF0F0F0)),
           const SizedBox(height: 16),
+          // Time Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                '반복',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              Text(
+                '루틴 지속 시간',
+                style: GoogleFonts.notoSansKr(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF484846),
+                  letterSpacing: -0.14,
+                ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                child: Text(
-                  days,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF3C3C3C),
+              Row(
+                children: [
+                  Text(
+                    '${start.isEmpty ? '--:--' : start}  ~  ${end.isEmpty ? '--:--' : end}',
+                    style: GoogleFonts.notoSansKr(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF484846),
+                      letterSpacing: -0.14,
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: Color(0xFFC6C5C3),
+                    size: 20,
+                  ),
+                ],
               ),
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildTimeBox(String time) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8F8F8),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        time.isEmpty ? '--:--' : time,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: Colors.black,
-        ),
       ),
     );
   }

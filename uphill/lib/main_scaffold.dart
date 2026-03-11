@@ -11,7 +11,6 @@ import 'screens/profile_screen.dart';
 import 'services/dummy_auth_service.dart';
 import 'screens/onboarding/login_screen.dart';
 import 'constants/app_constants.dart';
-import 'theme/app_theme.dart';
 
 /// 메인 스캐폴드 위젯
 /// 3개 탭 (홈, 피드백, 프로필)을 관리합니다.
@@ -85,19 +84,19 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).extension<UphillColors>()!;
-
     // 인증 확인 중 로딩 표시
     if (_checkingAuth) {
-      return Scaffold(
-        backgroundColor: colors.bgMain,
-        body: const Center(child: CircularProgressIndicator()),
+      return const Scaffold(
+        backgroundColor: Color(0xFFF8F8F8),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF555555)),
+        ),
       );
     }
 
     // 메인 스캐폴드 - 화면 + 바텀 네비게이션
     return Scaffold(
-      backgroundColor: colors.bgMain,
+      backgroundColor: const Color(0xFFF8F8F8),
       body: Stack(
         children: [
           // 화면 스택 - PageView로 변경하여 슬라이딩 효과 적용

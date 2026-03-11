@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/routine_service.dart';
 
 class RoutineEditScreen extends StatefulWidget {
@@ -67,40 +68,40 @@ class _RoutineEditScreenState extends State<RoutineEditScreen>
       final data = await RoutineService().getRoutine(widget.routineId);
 
       setState(() {
-        _titleController.text = data['title'] ?? widget.title;
-        _selectedPurpose = data['purpose'] ?? '운동';
+        _titleController.text = data.title;
+        _selectedPurpose = data.purpose ?? '운동';
         if (!_purposes.contains(_selectedPurpose)) {
           _purposes.add(_selectedPurpose);
         }
 
-        if (data['time'] != null) {
-          final parts = data['time'].split(':');
+        if (data.time != null) {
+          final parts = data.time!.split(':');
           _startTime = TimeOfDay(
             hour: int.parse(parts[0]),
             minute: int.parse(parts[1]),
           );
         }
-        if (data['end_time'] != null) {
-          final parts = data['end_time'].split(':');
+        if (data.endTime != null) {
+          final parts = data.endTime!.split(':');
           _endTime = TimeOfDay(
             hour: int.parse(parts[0]),
             minute: int.parse(parts[1]),
           );
         }
 
-        final List<dynamic> days = data['days'] ?? [];
+        final List<int> days = data.days;
         for (int i = 0; i < 7; i++) {
           _selectedDays[i] = days.contains(i);
         }
 
-        _isFlexible = data['is_flexible'] ?? true;
-        _notificationTime = data['notification_time'] ?? '10분 전';
+        _isFlexible = data.isFlexible;
+        _notificationTime = data.notificationTime ?? '10분 전';
 
-        _selectedRoom = data['space'] ?? '방 1';
-        _environmentDescController.text = data['description'] ?? '';
+        _selectedRoom = data.space ?? '방 1';
+        _environmentDescController.text = data.description ?? '';
 
-        if (data['iot_devices'] != null) {
-          _iotItems = List<Map<String, dynamic>>.from(data['iot_devices']);
+        if (data.iotDevices != null) {
+          _iotItems = List<Map<String, dynamic>>.from(data.iotDevices!);
         }
 
         _isLoading = false;
@@ -183,20 +184,26 @@ class _RoutineEditScreenState extends State<RoutineEditScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
-        title: const Text(
-          '루틴 수정',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
+        title: Text(
+          '루틴수정',
+          style: GoogleFonts.notoSansKr(
+            color: const Color(0xFF292B32),
+            fontWeight: FontWeight.w600,
             fontSize: 16,
+            letterSpacing: -0.16,
           ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Color(0xFF292B32),
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         bottom: PreferredSize(
@@ -205,7 +212,9 @@ class _RoutineEditScreenState extends State<RoutineEditScreen>
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.black))
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF555555)),
+            )
           : TabBarView(
               controller: _tabController,
               children: [_buildRoutineSettings(), _buildSpaceSettings()],
@@ -215,7 +224,7 @@ class _RoutineEditScreenState extends State<RoutineEditScreen>
 
   Widget _buildTabBar() {
     return Container(
-      color: const Color(0xFFFBFBFB),
+      color: Colors.transparent,
       child: Row(
         children: [
           Expanded(
@@ -225,23 +234,24 @@ class _RoutineEditScreenState extends State<RoutineEditScreen>
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
                   border: Border(
-                    top: BorderSide(
+                    bottom: BorderSide(
                       color: _tabController.index == 0
-                          ? const Color(0xFF333333)
-                          : const Color(0xFFB8B8B8),
-                      width: 3,
+                          ? const Color(0xFF292B32)
+                          : const Color(0xFFD9D9D9),
+                      width: 2,
                     ),
                   ),
                 ),
                 child: Text(
                   '루틴 설정',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: GoogleFonts.notoSansKr(
                     fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                     color: _tabController.index == 0
-                        ? const Color(0xFF1A1A1A)
-                        : const Color(0xFF1A1A1A),
+                        ? const Color(0xFF292B32)
+                        : const Color(0xFFB3B3B3),
+                    letterSpacing: -0.14,
                   ),
                 ),
               ),
@@ -254,23 +264,24 @@ class _RoutineEditScreenState extends State<RoutineEditScreen>
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
                   border: Border(
-                    top: BorderSide(
+                    bottom: BorderSide(
                       color: _tabController.index == 1
-                          ? const Color(0xFF333333)
-                          : const Color(0xFFB8B8B8),
-                      width: 3,
+                          ? const Color(0xFF292B32)
+                          : const Color(0xFFD9D9D9),
+                      width: 2,
                     ),
                   ),
                 ),
                 child: Text(
                   '공간 설정',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: GoogleFonts.notoSansKr(
                     fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                     color: _tabController.index == 1
-                        ? const Color(0xFF333333)
-                        : const Color(0xFF1A1A1A),
+                        ? const Color(0xFF292B32)
+                        : const Color(0xFFB3B3B3),
+                    letterSpacing: -0.14,
                   ),
                 ),
               ),
@@ -684,19 +695,20 @@ class _RoutineEditScreenState extends State<RoutineEditScreen>
               child: ElevatedButton(
                 onPressed: _saveRoutine,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3B3D4A),
-                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  backgroundColor: const Color(0xFF555555),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   elevation: 0,
                 ),
-                child: const Text(
+                child: Text(
                   '완료',
-                  style: TextStyle(
+                  style: GoogleFonts.notoSansKr(
                     fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                     color: Colors.white,
+                    letterSpacing: -0.16,
                   ),
                 ),
               ),

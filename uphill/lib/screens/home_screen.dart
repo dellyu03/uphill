@@ -430,7 +430,7 @@ class HomeScreenState extends State<HomeScreen> {
     ];
   }
 
-  /// 현재 시간 지시선 (빨간 선과 점)
+  /// 현재 시간 지시선 (올리브 점 + 선)
   Widget _buildCurrentTimeIndicator(DateTime now) {
     if (now.hour < LayoutConstants.startHour ||
         now.hour > LayoutConstants.endHour) {
@@ -445,23 +445,24 @@ class HomeScreenState extends State<HomeScreen> {
         8;
 
     return Positioned(
-      top: topOffset,
-      left: 45, // 시간 라벨 이후부터 시작
-      right: 0, // 끝까지
+      top: topOffset - 5, // 점의 중앙이 시간 라인에 오도록 조정
+      left: 42, // 시간 라벨 바로 옆
+      right: 0,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 150, // 진행선 길이 (임의의 길이 혹은 고정 길이)
-            height: 3,
-            color: const Color(0xFFFF0000), // 리얼 레드
-          ),
-          Container(
-            width: 14,
-            height: 14,
+            width: 10,
+            height: 10,
             decoration: const BoxDecoration(
-              color: Color(0xFFFF0000),
+              color: Color(0xFF98A340), // Figma 올리브 색상
               shape: BoxShape.circle,
+            ),
+          ),
+          Expanded(
+            child: Container(
+              height: 1.5,
+              color: const Color(0xFF98A340), // Figma 올리브 색상
             ),
           ),
         ],
