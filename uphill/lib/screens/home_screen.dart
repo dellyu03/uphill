@@ -252,27 +252,62 @@ class HomeScreenState extends State<HomeScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Text(
-                monthStr,
-                style: GoogleFonts.montserrat(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF555151),
-                  letterSpacing: -1.5,
+          GestureDetector(
+            onTap: () => _showCalendarPicker(context),
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  monthStr,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF555151),
+                    letterSpacing: -1.5,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 14),
-              const Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: Color(0xFFBDBDBD),
-                size: 32,
-              ),
-            ],
+                const SizedBox(width: 14),
+                const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Color(0xFFBDBDBD),
+                  size: 32,
+                ),
+              ],
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  /// 톤온톤 스타일의 달력 다이얼로그 띄우기
+  void _showCalendarPicker(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: _CalendarWidget(
+              initialDate: _selectedDay ?? DateTime.now(),
+              onDateSelected: (date) {
+                Navigator.pop(context); // 모달 닫기
+                setState(() {
+                  _selectedDay = date;
+                  _focusedDay = date;
+                });
+                _scrollController.jumpTo(0); // 다른 날짜 선택 시 스크롤 맨 위로 (또는 해당 날짜 스크롤 로직 추가 가능)
+                // 만약 날짜별 데이터를 새로 불러와야 한다면 여기서 호출
+                // 하지만 현재 구조는 전체 데이터를 가져오고 메모리에서 _getRoutinesForDate 로 필터링하므로, 새로 고침 안해도 화면은 업데이트 됨
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -637,3 +672,173 @@ class HomeScreenState extends State<HomeScreen> {
     return layout;
   }
 }
+
+/// 달력 모달 위젯 (톤온톤 스타일)
+class _CalendarWidget extends StatefulWidget {
+  final DateTime initialDate;
+  final ValueChanged<DateTime> onDateSelected;
+
+  const _CalendarWidget({
+    required this.initialDate,
+    required this.onDateSelected,
+  });
+
+  @override
+  State<_CalendarWidget> createState() => _CalendarWidgetState();
+}
+
+class _CalendarWidgetState extends State<_CalendarWidget> {
+  late DateTime _currentMonth;
+  late DateTime _selectedDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentMonth = DateTime(widget.initialDate.year, widget.initialDate.month);
+    _selectedDate = widget.initialDate;
+  }
+
+  void _previousMonth() {
+    setState(() {
+      _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1);
+    });
+  }
+
+  void _nextMonth() {
+    setState(() {
+      _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // 톤온톤 스타일 컬러셋
+    const oliveGreen = Color(0xFF98A340);
+    const lightOlive = Color(0xFFE1EB96);
+    const darkGray = Color(0xFF555151);
+
+    final monthStr = DateFormat('MMMM yyyy', 'en_US').format(_currentMonth);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // 상단 월 네비게이션
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.chevron_left, color: darkGray),
+              onPressed: _previousMonth,
+            ),
+            Text(
+              monthStr,
+              style: GoogleFonts.montserrat(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: darkGray,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.chevron_right, color: darkGray),
+              onPressed: _nextMonth,
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        
+        // 요일 헤더
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((day) {
+            return SizedBox(
+              width: 32,
+              child: Text(
+                day,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.montserrat(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFFBDBDBD),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
+
+        // 날짜 그리드
+        _buildCalendarGrid(oliveGreen, lightOlive, darkGray),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+
+  Widget _buildCalendarGrid(Color primaryColor, Color highlightBg, Color textColor) {
+    final firstDayOfMonth = DateTime(_currentMonth.year, _currentMonth.month, 1);
+    final lastDayOfMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 0);
+    
+    // 일요일이 0번 인덱스가 되도록 조정 (Dart의 weekday는 월=1, 일=7)
+    final firstWeekday = firstDayOfMonth.weekday == 7 ? 0 : firstDayOfMonth.weekday;
+    
+    // 달력에 표시될 전체 일수 (이전 달의 여백 포함)
+    int totalSlots = firstWeekday + lastDayOfMonth.day;
+    // 7로 나누어 떨어지게 전체 행 수 계산 (빈 칸 채우기)
+    int totalRows = (totalSlots / 7).ceil();
+    int totalGridItems = totalRows * 7;
+
+    List<Widget> gridItems = [];
+
+    for (int i = 0; i < totalGridItems; i++) {
+      if (i < firstWeekday || i >= totalSlots) {
+        // 비어 있는 칸
+        gridItems.add(const SizedBox(width: 36, height: 36));
+      } else {
+        // 실제 날짜 칸
+        final day = i - firstWeekday + 1;
+        final currentDate = DateTime(_currentMonth.year, _currentMonth.month, day);
+        final isSelected = currentDate.year == _selectedDate.year &&
+                           currentDate.month == _selectedDate.month &&
+                           currentDate.day == _selectedDate.day;
+        
+        final isToday = currentDate.year == DateTime.now().year &&
+                        currentDate.month == DateTime.now().month &&
+                        currentDate.day == DateTime.now().day;
+
+        gridItems.add(
+          GestureDetector(
+            onTap: () => widget.onDateSelected(currentDate),
+            child: Container(
+              margin: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: isSelected ? highlightBg : Colors.transparent,
+                shape: BoxShape.circle,
+                border: isToday && !isSelected 
+                    ? Border.all(color: primaryColor.withValues(alpha: 0.5), width: 1.5) 
+                    : null,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                '$day',
+                style: GoogleFonts.montserrat(
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  color: isSelected ? primaryColor : textColor,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 7,
+      childAspectRatio: 1.0,
+      children: gridItems,
+    );
+  }
+}
+
